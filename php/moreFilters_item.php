@@ -8,15 +8,11 @@
 	<option value="SlagChem">Chemistry Slag</option>
 	<option value="FurnaceAdd">Furnace Additions</option>
 	<option value="Scrap">Furnace Scrap</option>
-	<option value="ScrapYard">Scrap Yard</option>
 	<option value="LadleAdd">Ladle Additions</option>
-	<option value="Mg90">Desulf Mg90</option>
-	<option value="Mg90Replunge">Desulf Mg90 (replunge)</option>
-	<option value="DsfSkimWt">Desulf Skim Weight</option>
-	<option value="RecycleWt">Recycled Steel Weight</option>
-	<option value="TapDur">Tap Duration</option>
+	<option value="BOPmisc">BOP Misc.</option>
+	<option value="DegasserMisc">Degasser Misc.</option>
+	<option value="ScrapYard">Scrap Yard</option>
 	<option value="Vessel">Vessel</option>
-	<option value="Degasser">Degasser</option>
 </select>
 
 <select class="operator">

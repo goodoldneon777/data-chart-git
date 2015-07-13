@@ -4,9 +4,10 @@
 
 
 
-mSQL.runQuery = function(query) {
+mSQL.runQuery = function(query, type) {
 	'use strict';
 	var urlQuery = '';
+	var data = {};
 
 	if (g.OS === 'windows') {
 		urlQuery = 'php/query_windows.php';
@@ -19,7 +20,8 @@ mSQL.runQuery = function(query) {
 		type: 'POST',
 		url: urlQuery,
 		data: {
-			'input' : JSON.stringify(query)
+			'sql' : JSON.stringify(query),
+			'type' : JSON.stringify(type)
 		},
 		dataType: 'json',
 		success: function(results) {
@@ -31,65 +33,59 @@ mSQL.runQuery = function(query) {
 				);
 			}
 
+			console.log(query);
+			console.log(mMaster);
 
+			mMaster.queryResultsHandle(results.data, type);
+			mSQL.updateLog(mMaster, results.duration, results.user, results.ip, null);
 	
 			mOptions.toggleSubmitBtn('enable');
 		},
 		error: function(results) {
-
 			alert(
 				'ERROR: AJAX/PHP/SQL issue. \n\n' +
 				'This error isn\'t your fault. Please email a screenshot of this web page to Aaron Harper at amharper@uss.com.'
 			);
 
-			console.log(mMaster.sql.mainQuery);
+			console.log(results.data);
+			console.log(query);
+
+			mSQL.updateLog(mMaster, null, null, null, 'Y');
 
 			mOptions.toggleSubmitBtn('enable');
 	  }
 	 });
+};
 
 
-	function formatResults(results) {
-		var rowPrev = [];
-		var x, y, heatID, roundX, roundY, roundYcount, roundYstdev;
-		x = y = heatID = roundX = roundY = roundYcount = roundYstdev = '';
-		mMaster.data = {
-			heats: [],
-			averages: []
-		};
 
+mSQL.updateLog = function(mMaster, duration, user, ip, error) {
+	var me = getUrlParameter('me');
+	var test = getUrlParameter('test');
+	var log = getUrlParameter('log');
 
-		$.each(results, function( index, row ) {
-
-			rowPrev = [];
-			if (index > 0) {
-				rowPrev = results[index-1];
-			}
-
-			if (mMaster.x.type === 'datetime') {
-				x = Date.parse(row[0]);
-				roundX = Date.parse(row[3]);
-			} else {
-				x = parseFloat(row[0], 4);  //Fix Bug: Decimals showing as strings.
-				roundX = parseFloat(row[3], 4);  //Fix Bug: Decimals showing as strings.
-			}
-
-			y = parseFloat(row[1], 4);  //Fix Bug: Decimals showing as strings.
-			heatID = row[2];
-			roundY = parseFloat(row[4], 4);  //Fix Bug: Decimals showing as strings.
-			roundYcount = row[5];
-			roundYstdev = parseFloat(row[6], 1);  //Fix Bug: Decimals showing as strings.
-
-			mMaster.data.heats.push( { x: x, y: y, info: heatID } );
-
-			if ($.isNumeric(roundX)) {
-				if (index === 0) {
-					mMaster.data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
-				} else if ( (row[3] !== rowPrev[3])  ||  (row[4] !== rowPrev[4]) ) {
-					mMaster.data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
-				}
-			}
-
+	if (log !== 'N') {
+		$.ajax({
+			type: "POST",
+			url: 'php/updateLog.php',
+			data: {
+				"mMaster" : JSON.stringify(mMaster),
+				"duration" : 	JSON.stringify(duration),
+				"user" : 			JSON.stringify(user),
+				"ip" : 				JSON.stringify(ip),
+				"error" : 		JSON.stringify(error),
+				"me" : 				JSON.stringify(me),
+				"test" : 			JSON.stringify(test),
+			},
+			dataType: 'json',
+			success: function(results) {
+				// console.log(results);
+				// console.log(mMaster);
+			},
+			error: function(results) {
+				console.log("Log failed.");
+				console.log(results);
+		  }
 		});
 	}
 };
@@ -202,7 +198,6 @@ mSQL.mainQueryBuild = function(obj) {
 			prefixAnd( prefixSubName(obj.x.sql.subName, obj.x.sql.filterRealistic) ) +
 			prefixAnd( obj.y.sql.filter ) +
 			prefixAnd( prefixSubName(obj.y.sql.subName, obj.y.sql.filterRealistic) ) +
-			// '';
 			prefixAnd( prefixSubName(mMaster.x.sql.centralTable, mMaster.sql.filterGrade) );
 
 
@@ -446,6 +441,12 @@ mSQL.createSingleFilter = function(subName, idFull, operator, input1, input2, jo
 			break;
 		case 'notBetween':
 			filter = idFull + ' not between \'' + input1 + '\' and \'' + input2 + '\' \n';
+			break;
+		case '>':
+			filter = idFull + ' > \'' + input1 + '\' \n';
+			break;
+		case '<':
+			filter = idFull + ' < \'' + input1 + '\' \n';
 			break;
 		case '>=':
 			filter = idFull + ' >= \'' + input1 + '\' \n';

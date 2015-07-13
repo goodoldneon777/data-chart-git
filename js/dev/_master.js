@@ -2,11 +2,6 @@
 //===  _master.js  ============================================
 //=========================================================
 
-foo();
-function foo() {
-
-}
-
 
 var mMaster = {
 	sql: {},
@@ -29,13 +24,9 @@ var mMaster = {
 };
 
 var mSQL = {};
-
 var mOptions = {};
-
 var mMoreFilters = {};
-
 var mChart = {};
-
 
 
 
@@ -46,7 +37,70 @@ $(document).ready( function() {
 
 
 
+mMaster.queryResultsHandle = function(results, type) {
+	var data = {};
+	
+	data = formatResults(results, type);
+
+	mChart.display(data, mMaster);
+
+
+
+	function formatResults(results, type) {
+		var rowPrev = [];
+		var x, y, heatID, roundX, roundY, roundYcount, roundYstdev;
+		x = y = heatID = roundX = roundY = roundYcount = roundYstdev = '';
+		var data = {
+			heats: [],
+			averages: []
+		};
+
+
+		$.each(results, function( index, row ) {
+
+			rowPrev = [];
+			if (index > 0) {
+				rowPrev = results[index-1];
+			}
+
+			if (type === 'datetime') {
+				x = Date.parse(row[0]);
+				roundX = Date.parse(row[3]);
+			} else {
+				x = parseFloat(row[0], 4);  //Fix Bug: Decimals showing as strings.
+				roundX = parseFloat(row[3], 4);  //Fix Bug: Decimals showing as strings.
+			}
+
+			y = parseFloat(row[1], 4);  //Fix Bug: Decimals showing as strings.
+			heatID = row[2];
+			roundY = parseFloat(row[4], 4);  //Fix Bug: Decimals showing as strings.
+			roundYcount = row[5];
+			roundYstdev = parseFloat(row[6], 1);  //Fix Bug: Decimals showing as strings.
+
+			data.heats.push( { x: x, y: y, info: heatID } );
+
+			if ($.isNumeric(roundX)) {
+				if (index === 0) {
+					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
+				} else if ( (row[3] !== rowPrev[3])  ||  (row[4] !== rowPrev[4]) ) {
+					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
+				}
+			}
+
+		});
+
+		
+		return data;
+	}
+
+
+};
+
+
+
 mMaster.submitHandle = function() {
+	var query, type;
+	query = type = '';
 	g.error = false;
 
 	// Validate modules
@@ -60,17 +114,14 @@ mMaster.submitHandle = function() {
 	mMaster.prepareModuleOptions();
 	mMaster.prepareModuleMoreFilters();
 
-	// mMaster.createMainQuery();
+	// Build the query.
 	mMaster.sql.mainQuery = mSQL.mainQueryBuild(mMaster);
-	console.log(mMaster.sql.mainQuery);
-	console.log(mMaster);
 
-	// mSQL.runQuery(mMaster.sql.mainQuery);
+	// Run the query.
+	query = mMaster.sql.mainQuery;
+	type = mMaster.x.type;
+	mSQL.runQuery(query, type);
 	
-	// console.log(mMaster.y.sql.filterRealistic);
-	// console.log(mMaster.y.sql.filterRealisticArray);
-	// console.log(mMaster.y.sql.query);
-	// console.log(mMaster.sql.mainQuery);
 };
 
 
@@ -99,8 +150,11 @@ mMaster.prepareModuleMoreFilters = function() {
 			var input1 = $(obj.target + ' .input1').val();
 			var input2 = $(obj.target + ' .input2').val();
 			var joinType = obj.sql.joinType;
+			var filter = '';
 
-			var filter = mSQL.createSingleFilter(subName, idFull, operator, input1, input2, joinType);
+			if (obj.disableOperator === false) {
+				filter = mSQL.createSingleFilter(subName, idFull, operator, input1, input2, joinType);
+			}
 
 			return filter;
 		}
@@ -113,9 +167,6 @@ mMaster.prepareModuleMoreFilters = function() {
 			obj = mSQL.subQueryBuild(value.sql.idFull, mMaster.sql.filterGlobal);
 			mMoreFilters.eachFilter[index].sql.query = obj.sql.query;
 		});
-
-		// obj = mSQL.subQueryBuild(mMaster.x.sql.idFull, mMaster.sql.filterGlobal);
-		// mMaster.x.sql = $.extend(true, {}, mMaster.x.sql, obj.sql);
 	}
 };
 
@@ -148,7 +199,7 @@ mMaster.prepareModuleOptions = function() {
 		mMaster.sql.filterGlobal = 'tap_yr >= \'' + tap_yr + '\' \n';
 
 
-		if (mMaster.tapGrade !== '') {
+		if (mMaster.tapGrade) {
 			mMaster.sql.filterGrade = 'tap_grd like \'' + mMaster.tapGrade + '\' \n';
 		} else {
 			mMaster.sql.filterGrade = '';

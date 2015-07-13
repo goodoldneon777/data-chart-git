@@ -8,17 +8,13 @@
 							<option value="TempDiff">Temperature Difference</option>
 							<option value="Celox">Celox</option>
 							<option value="Chem">Chemistry</option>
-							<option value="ChemDiff" selected>Chemistry Difference</option>
+							<option value="ChemDiff">Chemistry Difference</option>
 							<option value="SlagChem">Chemistry Slag</option>
 							<option value="FurnaceAdd">Furnace Additions</option>
 							<option value="Scrap">Furnace Scrap</option>
 							<option value="LadleAdd">Ladle Additions</option>
-							<option value="Mg90">Desulf Mg90</option>
-							<option value="Mg90Replunge">Desulf Mg90 (replunge)</option>
-							<option value="DsfSkimWt">Desulf Skim Weight</option>
-							<option value="RecycleWt">Recycled Steel Weight</option>
-							<option value="TapDur">Tap Duration</option>
-							<option value="Degasser">Degasser</option>
+							<option value="BOPmisc">BOP Misc.</option>
+							<option value="DegasserMisc">Degasser Misc.</option>
 						</select>
 						<div class="fieldExpand">
 							<span class="message"></span>
@@ -52,12 +48,8 @@
 							<option value="FurnaceAdd">Furnace Additions</option>
 							<option value="Scrap">Furnace Scrap</option>
 							<option value="LadleAdd">Ladle Additions</option>
-							<option value="Mg90">Desulf Mg90</option>
-							<option value="Mg90Replunge">Desulf Mg90 (replunge)</option>
-							<option value="DsfSkimWt">Desulf Skim Weight</option>
-							<option value="RecycleWt">Recycled Steel Weight</option>
-							<option value="TapDur">Tap Duration</option>
-							<option value="Degasser">Degasser</option>
+							<option value="BOPmisc">BOP Misc.</option>
+							<option value="DegasserMisc">Degasser Misc.</option>
 						</select>
 						<div class="fieldExpand">
 							<span class="message"></span>

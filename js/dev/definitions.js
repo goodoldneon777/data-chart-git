@@ -596,73 +596,6 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.table = 'bop_ht';
 			obj.sql.db 		= 'USSGLW.dbo';
 			break;
-		case 'TapO2':
-			obj.sql.idFull 	= (idMain).fieldWrapAdd();
-			obj.title 	= idMain;
-			obj.type 		= 'linear';
-			obj.unit 		= 'ppm';
-			obj.format 	= '.f';
-			obj.decimals 	= 0;
-			obj.sql.field 	= 'tap_oxy';
-			obj.sql.table 	= 'bop_ht';
-			obj.sql.db 		= 'USSGLW.dbo';
-			break;
-		case 'Mg90':
-			obj.sql.idFull 	= (idMain).fieldWrapAdd();
-			obj.title 	= idMain;
-			obj.type 		= 'linear';
-			obj.unit 		= 'lbs';
-			obj.format 	= '.f';
-			obj.decimals 	= 0;
-			obj.sql.field 	= 'dslf_act_Mg90_wt';
-			obj.sql.table 	= 'bop_ht';
-			obj.sql.db 		= 'USSGLW.dbo';
-			break;
-		case 'Mg90Replunge':
-			obj.sql.idFull 	= (idMain).fieldWrapAdd();
-			obj.title 	= idMain;
-			obj.type 		= 'linear';
-			obj.unit 		= 'lbs';
-			obj.format 	= '.f';
-			obj.decimals 	= 0;
-			obj.sql.field 	= 'dslf_act_rplng_Mg90_wt';
-			obj.sql.table 	= 'bop_ht';
-			obj.sql.db 		= 'USSGLW.dbo';
-			break;
-		case 'DsfSkimWt':
-			obj.sql.idFull 	= (idMain).fieldWrapAdd();
-			obj.title 	= idMain;
-			obj.type 		= 'linear';
-			obj.unit 		= 'lbs';
-			obj.format 	= '.f';
-			obj.decimals 	= 0;
-			obj.sql.field 	= 'hm_skim_loss_wt';
-			obj.sql.table 	= 'bop_ht';
-			obj.sql.db 		= 'USSGLW.dbo';
-			break;
-		case 'RecycleWt':
-			obj.sql.idFull = (idMain).fieldWrapAdd();
-			obj.title 	= 'Recycled Steel';
-			obj.type 		= 'linear';
-			obj.unit 		= 'lbs';
-			obj.format 	= '.f';
-			obj.decimals 	= 0;
-			obj.sql.field 	= 'recycled_wt';
-			obj.sql.table 	= 'bop_recycled_ht';
-			obj.sql.db 		= 'USSGLW.dbo';
-			obj.sql.joinType = 'left outer join';
-			break;
-		case 'TapDur':
-			obj.sql.idFull = (idMain).fieldWrapAdd();
-			obj.title 	= 'Tap Duration';
-			obj.type 		= 'linear';
-			obj.unit 		= 'minutes';
-			obj.format 	= '.1f';
-			obj.decimals 	= 1;
-			obj.sql.field 	= 'tap_dur';
-			obj.sql.table 	= 'bop_ht';
-			obj.sql.db 		= 'USSGLW.dbo';
-			break;
 		case 'Vessel':
 			var vessel 	= params[0];
 			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
@@ -677,20 +610,70 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.filterLocal = '  and substring(ht_num, 1, 2) = \'' + vessel + '\' ';
 			obj.disableOperator = true;
 			break;
-		// case 'Grade':
-		// 	var vessel 	= params[0];
-		// 	obj.sql.idFull 	= (idMain).fieldWrapAdd();
-		// 	obj.title 	= idMain;
-		// 	obj.type 		= 'text';
-		// 	obj.unit 		= '';
-		// 	obj.format 	= '.f';
-		// 	obj.decimals 	= 0;
-		// 	obj.sql.field 	= 'null';
-		// 	obj.sql.table 	= 'bop_ht';
-		// 	obj.sql.db 		= 'USSGLW.dbo';
-		// 	obj.disableOperator = true;
-		// 	break;
-		case 'Degasser':
+		case 'BOPmisc':
+			var option 	= params[0];
+			switch (option) {
+				case 'Mg90':
+					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= idMain;
+					obj.type 		= 'linear';
+					obj.unit 		= 'lbs';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.field 	= 'dslf_act_Mg90_wt';
+					obj.sql.table 	= 'bop_ht';
+					obj.sql.db 		= 'USSGLW.dbo';
+					break;
+				case 'Mg90Replunge':
+					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= idMain;
+					obj.type 		= 'linear';
+					obj.unit 		= 'lbs';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.field 	= 'dslf_act_rplng_Mg90_wt';
+					obj.sql.table 	= 'bop_ht';
+					obj.sql.db 		= 'USSGLW.dbo';
+					break;
+				case 'DsfSkimWt':
+					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= idMain;
+					obj.type 		= 'linear';
+					obj.unit 		= 'lbs';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.field 	= 'hm_skim_loss_wt';
+					obj.sql.table 	= 'bop_ht';
+					obj.sql.db 		= 'USSGLW.dbo';
+					break;
+				case 'RecycleWt':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Recycled Steel';
+					obj.type 		= 'linear';
+					obj.unit 		= 'lbs';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.field 	= 'recycled_wt';
+					obj.sql.table 	= 'bop_recycled_ht';
+					obj.sql.db 		= 'USSGLW.dbo';
+					obj.sql.joinType = 'left outer join';
+					break;
+				case 'TapDur':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Tap Duration';
+					obj.type 		= 'linear';
+					obj.unit 		= 'minutes';
+					obj.format 	= '.1f';
+					obj.decimals 	= 1;
+					obj.sql.field 	= 'tap_dur';
+					obj.sql.table 	= 'bop_ht';
+					obj.sql.db 		= 'USSGLW.dbo';
+					break;
+				default:
+					break;
+			}
+			break;
+		case 'DegasserMisc':
 			var option 	= params[0];
 			switch (option) {
 				case 'RHSlagDepth':

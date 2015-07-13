@@ -135,7 +135,15 @@ function fieldExpandCreate(id, target) {
 
 	var vesselArr = ['25', '26'];
 
-	var degasserArr = [
+	var BOPmiscArr = [
+		['Mg90', 'Desulf Mg90'],
+		['Mg90Replunge', 'Desulf Mg90 (Replunge)'],
+		['DsfSkimWt', 'Desulf Skim Weight'],
+		['RecycleWt', 'Recycled Steel Weight'],
+		['TapDur', 'Tap Duration']
+	];
+
+	var degasserMiscArr = [
 		['RHSlagDepth', 'Slag Depth'],
 		['RHFreeboard', 'Freeboard'],
 		['RHFinalStir', 'Final Stir Time'],
@@ -209,8 +217,11 @@ function fieldExpandCreate(id, target) {
 		case 'Vessel':
 			selectCreate(target + ' .select1', vesselArr);
 			break;
-		case 'Degasser':
-			selectCreate(target + ' .select1', degasserArr);
+		case 'BOPmisc':
+			selectCreate(target + ' .select1', BOPmiscArr);
+			break;
+		case 'DegasserMisc':
+			selectCreate(target + ' .select1', degasserMiscArr);
 			break;
 		default:
 			break;
