@@ -1,0 +1,149 @@
+#m-moreFilters {
+	position: relative;
+	width: 100%;
+	margin-top: 7px;
+	border: 1px solid gray;
+	padding-left: 10px;
+}
+#m-moreFilters .title {
+	margin-left: -10px;
+	padding: 3px;
+	padding-left: 10px;
+	background-color: rgb(177, 213, 255);
+	font-size: 18px;
+	text-align: left;
+	font-weight: bold;
+}
+#m-moreFilters .item {
+	padding: 10px;
+}
+#m-moreFilters .field {
+	margin-left: 10px;
+}
+#m-moreFilters .fieldExpand {
+	margin-left: 10px;
+}
+#m-moreFilters .fieldExpand span,
+#m-moreFilters .fieldExpand select {
+	display:block;
+}
+#m-moreFilters .isOrNot {
+	margin-left: 15px;
+}
+#m-moreFilters .range {
+	display: inline;
+}
+#m-moreFilters .range input {
+	width: 50px;
+	height: 20px;
+}
+
+
+
+
+#m-options {
+	position: relative;
+	width: 100%;
+	border: 1px solid gray;
+	padding-left: 10px;
+}
+#m-options .title {
+	margin-left: -10px;
+	padding: 3px;
+	background-color: rgb(177, 213, 255);
+	font-size: 18px;
+	text-align: center;
+	font-weight: bold;
+}
+#m-options .subtitle {
+	margin-top: 5px;
+}
+
+
+#m-options .dataRange input{
+	width: 75px;
+	margin: 2px;
+}
+#m-options .axisRange input{
+	width: 75px;
+	margin: 2px;
+}
+#m-options .round input{
+	width: 75px;
+	margin: 2px;
+}
+#m-options select {
+	margin-top: 5px;
+}
+
+#m-options #generate {
+	margin: 10px;
+	padding: 7px;
+}
+
+#m-options #options-filter .tapGrade input {
+	width: 75px;
+	margin: 2px;
+}
+
+#m-options #fieldExpand {
+	margin-top: 3px;
+}
+#m-options #fieldExpand-chem .chemID{
+	width: 50px;
+	margin: 2px;
+}
+#m-options #fieldExpand-chem .chemElem{
+	width: 30px;
+	margin: 2px;
+}
+
+
+
+
+#m-graph {
+	width: 100%;
+	height: 600px;
+
+	border: 1px solid gray;
+}
+
+
+
+
+
+#l-wrapper {
+	position: relative;
+	width: 100%;
+	max-width: 1400px;
+	margin: 0 auto;
+}
+
+#l-main {
+	vertical-align: top;
+	padding: 5px;
+	padding-left: 7px;
+}
+
+#l-sidebar {
+	width: 200px;
+	vertical-align: top;
+	padding-top: 5px;
+}
+
+
+
+
+.required {
+	border: 2px solid red;
+}
+
+
+* {
+	box-sizing: border-box;
+	border-spacing: 0;
+	border-collapse: collapse;
+	margin: 0;
+	padding: 0;
+	font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+}
