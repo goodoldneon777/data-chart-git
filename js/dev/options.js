@@ -117,6 +117,7 @@ mOptions.validate = function() {
 	var max = null;
 
 
+	//checkRequiredInputs();
 	runTests('#options-x');
 	runTests('#options-y');
 	runTests('#options-filter');
@@ -124,13 +125,30 @@ mOptions.validate = function() {
 	return true;
 
 	
+	function checkRequiredInputs() {
+	
+	}
+
+
 	function runTests(target) {
 		if (target === '#options-filter') {  // If testing the filter section.
 			type = 'datetime';
-		} else {  // If testing the axis sections.
+
+			min = nullIfBlank($(target + " .min").val());
+
+			if (!min) {
+				msg =
+					'ERROR: Missing minimum date.\n\n' +
+					'You must enter a minimum date in the \'Time Range\' section.';
+				g.errorFunc(msg);
+			}
+		} else {
 			idMain = $(target + " .field option:selected").val();
 			type = getDefinitions(idMain, null, null).type;
 		}
+
+
+		
 
 
 		// Validate data range
@@ -173,6 +191,7 @@ mOptions.validate = function() {
 				return false;
 			}
 		}
+
 
 
 		// Validate rounding input.
