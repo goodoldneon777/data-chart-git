@@ -138,7 +138,8 @@ function fieldExpandCreate(id, target) {
 	var BOPmiscArr = [
 		['Mg90', 'Desulf Mg90'],
 		['Mg90Replunge', 'Desulf Mg90 (Replunge)'],
-		['DsfSkimWt', 'Desulf Skim Weight'],
+		['DsfSkimCrane', 'Desulf Skim (Crane)'],
+		['DsfSkimCalc', 'Desulf Skim (Calc)'],
 		['RecycleWt', 'Recycled Steel Weight'],
 		['TapDur', 'Tap Duration']
 	];
@@ -149,6 +150,11 @@ function fieldExpandCreate(id, target) {
 		['RHFinalStir', 'Final Stir Time'],
 		['RHHtsOnSnorkel', 'Heats on Snorkel']
 	];
+
+	var argonMiscArr = [
+		['TotalStir', 'Total Stir']
+	];
+
 
 
 
@@ -222,6 +228,9 @@ function fieldExpandCreate(id, target) {
 			break;
 		case 'DegasserMisc':
 			selectCreate(target + ' .select1', degasserMiscArr);
+			break;
+		case 'ArgonMisc':
+			selectCreate(target + ' .select1', argonMiscArr);
 			break;
 		default:
 			break;

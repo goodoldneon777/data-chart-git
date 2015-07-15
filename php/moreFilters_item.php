@@ -11,6 +11,7 @@
 	<option value="LadleAdd">Ladle Additions</option>
 	<option value="BOPmisc">BOP Misc.</option>
 	<option value="DegasserMisc">Degasser Misc.</option>
+	<option value="ArgonMisc">Argon Misc.</option>
 	<option value="ScrapYard">Scrap Yard</option>
 	<option value="Vessel">Vessel</option>
 </select>

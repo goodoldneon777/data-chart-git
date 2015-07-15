@@ -612,6 +612,7 @@ function getDefinitions(idMain, params, paramsNames) {
 			break;
 		case 'BOPmisc':
 			var option 	= params[0];
+			obj.type 		= 'linear';
 			switch (option) {
 				case 'Mg90':
 					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
@@ -635,9 +636,9 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.table 	= 'bop_ht';
 					obj.sql.db 		= 'USSGLW.dbo';
 					break;
-				case 'DsfSkimWt':
+				case 'DsfSkimCrane':
 					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
-					obj.title 	= idMain;
+					obj.title 	= 'Desulf Skim (Crane)';
 					obj.type 		= 'linear';
 					obj.unit 		= 'lbs';
 					obj.format 	= '.f';
@@ -645,6 +646,19 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.field 	= 'hm_skim_loss_wt';
 					obj.sql.table 	= 'bop_ht';
 					obj.sql.db 		= 'USSGLW.dbo';
+					obj.sql.filterLocal = '  and hm_skim_loss_wt_typ = \'C\' ';
+					break;
+				case 'DsfSkimCalc':
+					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Desulf Skim (Calc)';
+					obj.type 		= 'linear';
+					obj.unit 		= 'lbs';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.field 	= 'hm_skim_loss_wt';
+					obj.sql.table 	= 'bop_ht';
+					obj.sql.db 		= 'USSGLW.dbo';
+					obj.sql.filterLocal = '  and hm_skim_loss_wt_typ = \'P\' ';
 					break;
 				case 'RecycleWt':
 					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
@@ -675,6 +689,7 @@ function getDefinitions(idMain, params, paramsNames) {
 			break;
 		case 'DegasserMisc':
 			var option 	= params[0];
+			obj.type 		= 'linear';
 			switch (option) {
 				case 'RHSlagDepth':
 					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
@@ -720,6 +735,25 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.table 	= 'degas_ht_equip_usage';
 					obj.sql.db 		= 'USSGLW.dbo';
 					obj.sql.filterLocal = '  and degas_ht_equip_usage.equip_cd = \'UPSNKL\' ';
+					break;
+				default:
+					break;
+			}
+			break;
+			case 'ArgonMisc':
+			var option 	= params[0];
+			obj.type 		= 'linear';
+			switch (option) {
+				case 'TotalStir':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Argon Total Stir';
+					obj.type 		= 'linear';
+					obj.unit 		= 'minutes';
+					obj.format 	= '.1f';
+					obj.decimals 	= 1;
+					obj.sql.field 	= 'convert(decimal(10,1), cum_stir_time)';
+					obj.sql.table 	= 'argon_ht';
+					obj.sql.db 		= 'USSGLW.dbo';
 					break;
 				default:
 					break;
