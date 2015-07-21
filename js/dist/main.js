@@ -6,7 +6,7 @@
 var g = {};
 
 
-g.OS = 'linux';
+g.OS = 'windows';
 
 
 g.maxRows = 20000;
@@ -257,6 +257,7 @@ function fieldExpandCreate(id, target) {
 		['DsfSkimCrane', 'Desulf Skim (Crane)'],
 		['DsfSkimCalc', 'Desulf Skim (Calc)'],
 		['RecycleWt', 'Recycled Steel Weight'],
+		['TotalN2Cool', 'Total N2 Cool Time'],
 		['TapDur', 'Tap Duration']
 	];
 
@@ -1028,6 +1029,19 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.db 		= 'USSGLW.dbo';
 					obj.sql.joinType = 'left outer join';
 					break;
+				case 'TotalN2Cool':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Total N2 Cool Time';
+					obj.type 		= 'linear';
+					obj.unit 		= 'seconds';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.selectDistinct = true;
+					obj.sql.field 	= 'sum(cool_dur_sec) over(partition by ht_num, tap_yr)';
+					obj.sql.table 	= 'bop_ht_coolant';
+					obj.sql.db 		= 'USSGLW.dbo';
+					obj.sql.joinType = 'left outer join';
+					break;
 				case 'TapDur':
 					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
 					obj.title 	= 'Tap Duration';
@@ -1126,7 +1140,9 @@ function getDefinitions(idMain, params, paramsNames) {
 	(obj.sql.filterLocal === undefined) ? (obj.sql.filterLocal = '') : (obj.sql.filterLocal += ' \n');
 	(obj.sql.filterRealistic === undefined) ? (obj.sql.filterRealistic = '') : (obj.sql.filterRealistic += ' \n');
 	(obj.sql.joinType === undefined) ? (obj.sql.joinType = 'inner join') : (null);
+	(obj.sql.selectDistinct === undefined) ? (obj.sql.selectDistinct = false) : (null);
 	(obj.disableOperator === undefined) ? (obj.disableOperator = false) : (null);
+
 
 	return obj;
 }
@@ -1240,6 +1256,7 @@ mMaster.submitHandle = function() {
 	mOptions.validate();
 	mMoreFilters.validate();
 	if (g.error === true) {
+		mOptions.toggleSubmitBtn('enable');
 		return false;
 	}
 
@@ -1658,6 +1675,7 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 	var subFields = [], filterRealisticArray = [], params = [], paramsNames = [], idSplit = [];
 	var calcField = null;
 	var obj = {}, sql = {};
+	var select = null;
 
 	// Clean up and separate.
 	idSplit = idFull.fieldWrapDelete().split(' ');
@@ -1673,13 +1691,15 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 
 	obj = getDefinitions(idMain, params, paramsNames);
 	field = obj.sql.field;
+	if (obj.sql.selectDistinct) { select = 'select distinct'; } else { select = 'select'; }
 
 	subFields = field.fieldWrapToArray();
 	if (subFields.length > 0) { calcField = true; } else { calcField = false; }
+
 	if ( (queryDepth === 1)  &&  (calcField === false) ) {
 		subName = null;
 		selectPrefix = mSQL.createSelectPrefix(obj.sql.joinKeyArray, subName);
-		query = 'select ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
+		query = select + ' ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
 						'from ' + obj.sql.db + '.' + obj.sql.table + ' \n' +
 						'where ' + filterGlobal;
 
@@ -1690,7 +1710,7 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 	} else if (calcField === true) {
 		subName = 'sub1';
 		selectPrefix = mSQL.createSelectPrefix(obj.sql.joinKeyArray, subName);
-		query = 'select ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
+		query = select + ' ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
 						'from( \n';
 
 		sql = obj.sql;  // Temporarily store obj.sql so that it can be reset after handing subqueries in the $.each() loop below.
@@ -1754,7 +1774,7 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 	} else if ( (queryDepth > 1)  &&  (calcField === false) ) {
 		subName = null;
 		selectPrefix = mSQL.createSelectPrefix(obj.sql.joinKeyArray, subName);
-		query = 'select ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
+		query = select + ' ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
 						'from ' + obj.sql.db + '.' + obj.sql.table + ' \n' +
 						'where ' + filterGlobal;
 
@@ -1932,7 +1952,6 @@ mOptions.init = function() {
 
 			mMaster.submitHandle();
 
-			mOptions.toggleSubmitBtn('enable');
 		});
 
 	}

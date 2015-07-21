@@ -44,7 +44,6 @@ mOptions.init = function() {
 
 			mMaster.submitHandle();
 
-			mOptions.toggleSubmitBtn('enable');
 		});
 
 	}

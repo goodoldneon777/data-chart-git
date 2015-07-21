@@ -239,6 +239,7 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 	var subFields = [], filterRealisticArray = [], params = [], paramsNames = [], idSplit = [];
 	var calcField = null;
 	var obj = {}, sql = {};
+	var select = null;
 
 	// Clean up and separate.
 	idSplit = idFull.fieldWrapDelete().split(' ');
@@ -254,13 +255,15 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 
 	obj = getDefinitions(idMain, params, paramsNames);
 	field = obj.sql.field;
+	if (obj.sql.selectDistinct) { select = 'select distinct'; } else { select = 'select'; }
 
 	subFields = field.fieldWrapToArray();
 	if (subFields.length > 0) { calcField = true; } else { calcField = false; }
+
 	if ( (queryDepth === 1)  &&  (calcField === false) ) {
 		subName = null;
 		selectPrefix = mSQL.createSelectPrefix(obj.sql.joinKeyArray, subName);
-		query = 'select ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
+		query = select + ' ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
 						'from ' + obj.sql.db + '.' + obj.sql.table + ' \n' +
 						'where ' + filterGlobal;
 
@@ -271,7 +274,7 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 	} else if (calcField === true) {
 		subName = 'sub1';
 		selectPrefix = mSQL.createSelectPrefix(obj.sql.joinKeyArray, subName);
-		query = 'select ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
+		query = select + ' ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
 						'from( \n';
 
 		sql = obj.sql;  // Temporarily store obj.sql so that it can be reset after handing subqueries in the $.each() loop below.
@@ -335,7 +338,7 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 	} else if ( (queryDepth > 1)  &&  (calcField === false) ) {
 		subName = null;
 		selectPrefix = mSQL.createSelectPrefix(obj.sql.joinKeyArray, subName);
-		query = 'select ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
+		query = select + ' ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
 						'from ' + obj.sql.db + '.' + obj.sql.table + ' \n' +
 						'where ' + filterGlobal;
 

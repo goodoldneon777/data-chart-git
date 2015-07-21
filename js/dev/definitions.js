@@ -672,6 +672,19 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.db 		= 'USSGLW.dbo';
 					obj.sql.joinType = 'left outer join';
 					break;
+				case 'TotalN2Cool':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Total N2 Cool Time';
+					obj.type 		= 'linear';
+					obj.unit 		= 'seconds';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.selectDistinct = true;
+					obj.sql.field 	= 'sum(cool_dur_sec) over(partition by ht_num, tap_yr)';
+					obj.sql.table 	= 'bop_ht_coolant';
+					obj.sql.db 		= 'USSGLW.dbo';
+					obj.sql.joinType = 'left outer join';
+					break;
 				case 'TapDur':
 					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
 					obj.title 	= 'Tap Duration';
@@ -770,7 +783,9 @@ function getDefinitions(idMain, params, paramsNames) {
 	(obj.sql.filterLocal === undefined) ? (obj.sql.filterLocal = '') : (obj.sql.filterLocal += ' \n');
 	(obj.sql.filterRealistic === undefined) ? (obj.sql.filterRealistic = '') : (obj.sql.filterRealistic += ' \n');
 	(obj.sql.joinType === undefined) ? (obj.sql.joinType = 'inner join') : (null);
+	(obj.sql.selectDistinct === undefined) ? (obj.sql.selectDistinct = false) : (null);
 	(obj.disableOperator === undefined) ? (obj.disableOperator = false) : (null);
+
 
 	return obj;
 }

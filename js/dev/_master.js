@@ -107,6 +107,7 @@ mMaster.submitHandle = function() {
 	mOptions.validate();
 	mMoreFilters.validate();
 	if (g.error === true) {
+		mOptions.toggleSubmitBtn('enable');
 		return false;
 	}
 
