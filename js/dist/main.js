@@ -1194,7 +1194,6 @@ mMaster.queryResultsHandle = function(results, type) {
 	mChart.display(data, mMaster);
 
 
-
 	function formatResults(results, type) {
 		var rowPrev = [];
 		var x, y, heatID, roundX, roundY, roundYcount, roundYstdev;
