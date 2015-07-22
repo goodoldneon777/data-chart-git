@@ -6,7 +6,7 @@
 var g = {};
 
 
-g.OS = 'windows';
+// g.OS = 'windows';
 
 
 g.maxRows = 20000;

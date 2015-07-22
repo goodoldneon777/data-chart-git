@@ -6,6 +6,13 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <title>Data Chart</title>
 
+<!--[if lte IE 8]>
+    <script type="text/javascript">
+        window.location = "/upgrade-message.php";
+    </script>
+<![endif]-->
+
+
 <script type="text/javascript" src="js/plugins/jquery-2.1.3.min.js"></script>
 
 
@@ -35,7 +42,9 @@
 <script src="js/plugins/highcharts/modules/exporting.js"></script>
 <script src="js/plugins/moment.min.js"></script>
 <script src="js/plugins/highcharts-regression.js"></script>
-<script src="js/dist/main.js"></script>
+
+<script src="../../server.js"></script>
+<script src="js/dist/main.min.js"></script>
 
 
 <!-- <script src="pages/dataChart/dataChart.js"></script> -->

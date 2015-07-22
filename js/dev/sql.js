@@ -9,9 +9,9 @@ mSQL.runQuery = function(query, type) {
 	var urlQuery = '';
 	var data = {};
 
-	if (g.OS === 'windows') {
+	if (s.OS === 'windows') {
 		urlQuery = 'php/query_windows.php';
-	} else if (g.OS === 'linux') {
+	} else if (s.OS === 'linux') {
 		urlQuery = 'php/query_linux.php';
 	}
 

@@ -6,7 +6,7 @@
 var g = {};
 
 
-g.OS = 'windows';
+// g.OS = 'windows';
 
 
 g.maxRows = 20000;
@@ -27,11 +27,11 @@ g.errorFunc = function(msg) {
 
 String.prototype.fieldWrapDelete = function() {
 	'use strict';
-	if (g.OS === 'linux') {
+	if (s.OS === 'linux') {
 		var str = this.replace(/\[/g,'');
 		str = str.replace(/\]/g,'');
 		return str;
-	} else if (g.OS === 'windows') {
+	} else if (s.OS === 'windows') {
 		return this.replace(/\"/g,'');
 	}
 };
@@ -40,9 +40,9 @@ String.prototype.fieldWrapDelete = function() {
 
 String.prototype.fieldWrapAdd = function() {
 	'use strict';
-	if (g.OS === 'linux') {
+	if (s.OS === 'linux') {
 		return '[' + this + ']';
-	} else if (g.OS === 'windows') {
+	} else if (s.OS === 'windows') {
 		return '"' + this + '"';
 	}
 };
@@ -52,7 +52,7 @@ String.prototype.fieldWrapAdd = function() {
 String.prototype.fieldWrapToArray = function() {
 	'use strict';
 	var arr = [];
-	if (g.OS === 'linux') {
+	if (s.OS === 'linux') {
 		arr = this.match(/\[(.*?)\]/g);
 		if (arr === null ) {
 			arr = [];
@@ -62,7 +62,7 @@ String.prototype.fieldWrapToArray = function() {
 			});
 		}
 		return arr;
-	} else if (g.OS === 'windows') {
+	} else if (s.OS === 'windows') {
 		var arrTemp = this.split('"');
 		arr = [];
 		$.each(arrTemp, function( index, value ) {
@@ -1444,9 +1444,9 @@ mSQL.runQuery = function(query, type) {
 	var urlQuery = '';
 	var data = {};
 
-	if (g.OS === 'windows') {
+	if (s.OS === 'windows') {
 		urlQuery = 'php/query_windows.php';
-	} else if (g.OS === 'linux') {
+	} else if (s.OS === 'linux') {
 		urlQuery = 'php/query_linux.php';
 	}
 
