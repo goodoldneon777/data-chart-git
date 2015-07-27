@@ -15,15 +15,16 @@ module.exports = function(grunt) {
       },
       dist: {
         src: [
-          'js/dev/global.js',
-          'js/dev/extensions.js',
-          'js/dev/fieldExpand.js',
-          'js/dev/definitions.js',
-          'js/dev/_master.js',
-          'js/dev/sql.js',
-          'js/dev/options.js',
-          'js/dev/moreFilters.js',
-          'js/dev/chart.js'
+          // 'js/dev/global.js',
+          // 'js/dev/extensions.js',
+          // 'js/dev/fieldExpand.js',
+          // 'js/dev/definitions.js',
+          // 'js/dev/_master.js',
+          // 'js/dev/sql.js',
+          // 'js/dev/options.js',
+          // 'js/dev/moreFilters.js',
+          // 'js/dev/chart.js'
+          'js/dev/*.js'
         ],
         dest: 'js/dist/main.js'
       }

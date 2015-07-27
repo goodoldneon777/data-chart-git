@@ -25,6 +25,7 @@ var mMaster = {
 
 var mSQL = {};
 var mOptions = {};
+var mUpdateAxes = {};
 var mMoreFilters = {};
 var mChart = {};
 
@@ -32,6 +33,7 @@ var mChart = {};
 
 $(document).ready( function() {
 	mOptions.init();
+	mUpdateAxes.start();
 	mMoreFilters.init();
 });
 

@@ -538,7 +538,7 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.filterRealistic = obj.sql.idFull + ' > 0 ';
 					break;
 				case 'ArArrive':
-					obj.sql.field 	= 'samp_oxy';
+					obj.sql.field 	= 'samp_oxy_dec';
 					obj.sql.table 	= 'ms_heat_celox';
 					obj.sql.db 			= 'USSGLW.dbo';
 					obj.sql.filterLocal =
@@ -547,7 +547,7 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.filterRealistic = obj.sql.idFull + ' > 0 ';
 					break;
 				case 'ArLeave':
-					obj.sql.field 	= 'samp_oxy';
+					obj.sql.field 	= 'samp_oxy_dec';
 					obj.sql.table 	= 'ms_heat_celox';
 					obj.sql.db 			= 'USSGLW.dbo';
 					obj.sql.filterLocal =
@@ -588,7 +588,7 @@ function getDefinitions(idMain, params, paramsNames) {
 			break;
 		case 'ChargeDTS':
 			obj.sql.idFull 	= (idMain).fieldWrapAdd();
-			obj.title 	= idMain;
+			obj.title 	= 'Charge DTS';
 			obj.type 		= 'datetime';
 			obj.unit 		= '';
 			obj.format 	= '%m/%d/%Y';
@@ -596,10 +596,10 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.table = 'bop_ht';
 			obj.sql.db 		= 'USSGLW.dbo';
 			break;
-		case 'Vessel':
+		case 'BOPVessel':
 			var vessel 	= params[0];
 			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
-			obj.title 	= idMain;
+			obj.title 	= 'BOP Vessel';
 			obj.type 		= 'text';
 			obj.unit 		= '';
 			obj.format 	= '.f';
@@ -610,13 +610,27 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.filterLocal = '  and substring(ht_num, 1, 2) = \'' + vessel + '\' ';
 			obj.disableOperator = true;
 			break;
+		case 'RHVessel':
+			var vessel 	= params[0];
+			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
+			obj.title 	= 'RH Vessel';
+			obj.type 		= 'text';
+			obj.unit 		= '';
+			obj.format 	= '.f';
+			obj.decimals 	= 0;
+			obj.sql.field 	= 'active_ves';
+			obj.sql.table 	= 'degas_ht';
+			obj.sql.db 		= 'USSGLW.dbo';
+			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + vessel + '\' ';
+			obj.disableOperator = true;
+			break;
 		case 'BOPmisc':
 			var option 	= params[0];
 			obj.type 		= 'linear';
 			switch (option) {
 				case 'Mg90':
 					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
-					obj.title 	= idMain;
+					obj.title 	= 'Mg90';
 					obj.type 		= 'linear';
 					obj.unit 		= 'lbs';
 					obj.format 	= '.f';
@@ -627,7 +641,7 @@ function getDefinitions(idMain, params, paramsNames) {
 					break;
 				case 'Mg90Replunge':
 					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
-					obj.title 	= idMain;
+					obj.title 	= 'Mg90 Replunge';
 					obj.type 		= 'linear';
 					obj.unit 		= 'lbs';
 					obj.format 	= '.f';
@@ -726,6 +740,35 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.table 	= 'degas_ht';
 					obj.sql.db 		= 'USSGLW.dbo';
 					break;
+				case 'DecarbTime':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'RH Decarb Time';
+					obj.type 		= 'linear';
+					obj.unit 		= 'minutes';
+					obj.format 	= '.1f';
+					obj.decimals 	= 1;
+					obj.sql.field 	= 'freeboard';
+					obj.sql.field =
+						'convert( \n' + 
+						'  decimal(10, 1), \n' + 
+						'  datediff( \n' + 
+						'    second, \n' + 
+						'    max( \n' + 
+						'      case when evt_name like \'CIRC CONFIRMED%\' then evt_dt end \n' + 
+						'    ) over(partition by ht_num, tap_yr, deg_ht_sufx), \n' + 
+						'    max( \n' + 
+						'      case when evt_name like \'DEOX START%\' then evt_dt end \n' + 
+						'    ) over(partition by ht_num, tap_yr, deg_ht_sufx) \n' + 
+						'  )/60.0 \n' + 
+						')';
+					obj.sql.table 	= 'degas_ht_event';
+					obj.sql.db 		= 'USSGLW.dbo';
+					obj.sql.filterLocal =
+						'  and( \n' +
+						'    evt_name like \'CIRC CONFIRMED%\' \n' +
+						'    or evt_name like \'DEOX START%\' \n' +
+						'  )';
+					break;
 				case 'RHFinalStir':
 					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
 					obj.title 	= 'RH Final Stir Time';
@@ -749,6 +792,33 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.db 		= 'USSGLW.dbo';
 					obj.sql.filterLocal = '  and degas_ht_equip_usage.equip_cd = \'UPSNKL\' ';
 					break;
+				case 'ChemTestCount':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'RH Chem Test Count';
+					obj.type 		= 'linear';
+					obj.unit 		= 'tests';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.selectDistinct = true;
+					obj.sql.field 	= 'count(test_id) over (partition by ht_num, tap_yr)';
+					obj.sql.table 	= 'ms_ht_chem_samp_anal';
+					obj.sql.db 		= 'USSGLW.dbo';
+					obj.sql.filterLocal =
+						'  and test_id like \'V%\' \n' +
+						'  and elem_cd = \'C\'';
+					break;
+				case 'TreatmentCount':
+					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'RH Treatment Count';
+					obj.type 		= 'text';
+					obj.unit 		= '';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.selectDistinct = true;
+					obj.sql.field 	= 'count(deg_ht_sufx) over(partition by ht_num, tap_yr)';
+					obj.sql.table 	= 'degas_ht';
+					obj.sql.db 		= 'USSGLW.dbo';
+					break;
 				default:
 					break;
 			}
@@ -767,6 +837,21 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.field 	= 'convert(decimal(10,1), cum_stir_time)';
 					obj.sql.table 	= 'argon_ht';
 					obj.sql.db 		= 'USSGLW.dbo';
+					break;
+				case 'ChemTestCount':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Ar Chem Test Count';
+					obj.type 		= 'linear';
+					obj.unit 		= 'tests';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.selectDistinct = true;
+					obj.sql.field 	= 'count(test_id) over (partition by ht_num, tap_yr)';
+					obj.sql.table 	= 'ms_ht_chem_samp_anal';
+					obj.sql.db 		= 'USSGLW.dbo';
+					obj.sql.filterLocal =
+						'  and test_id like \'A_L_\' \n' +
+						'  and elem_cd = \'C\'';
 					break;
 				default:
 					break;

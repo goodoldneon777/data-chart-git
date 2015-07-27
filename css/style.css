@@ -100,6 +100,20 @@
 
 
 
+#m-updateAxes {
+	overflow: hidden;
+}
+#m-updateAxes .range input {
+	width: 77px;
+}
+/*#m-updateAxes .subtitle {
+	margin-bottom: 5px;
+}
+#m-updateAxes .range {
+	margin-bottom: 5px;
+}*/
+
+
 
 #m-graph {
 	width: 100%;
@@ -109,6 +123,33 @@
 }
 
 
+
+
+.sidebox {
+	margin-top: 10px;
+	width: 100%;
+	border: 1px solid gray;
+}
+.sidebox .title {
+	padding: 3px;
+	background-color: rgb(177, 213, 255);
+	font-size: 18px;
+	text-align: center;
+	font-weight: bold;
+}
+.sidebox .content {
+	margin: 10px;
+}
+.sidebox .item {
+	margin-bottom: 10px;
+}
+.sidebox .submit {
+	text-align: center;
+	margin: 20px;
+}
+.sidebox .submit .button{
+	padding: 7px;
+}
 
 
 

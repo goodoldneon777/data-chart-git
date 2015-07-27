@@ -142,7 +142,7 @@ mSQL.mainQueryBuild = function(obj) {
 		'select \n' +
 		'  x, y, heat, roundX, ' + roundYavg + ', ' + roundYcount + ', ' + roundYstdev + ' \n' +
 		'from( \n' +
-		'  select \n' +
+		'  select distinct \n' +
 		'    ' + x + ', ' + y + ', ' + heat + ', ' + roundX + ' \n' + 
 		'  from ' + centralDB + '.' + centralTable + ' ' + centralTable + ' \n' +
 		'  ' + obj.x.sql.joinType + '( \n' +

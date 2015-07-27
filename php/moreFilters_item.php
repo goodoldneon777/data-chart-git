@@ -13,7 +13,8 @@
 	<option value="DegasserMisc">Degasser Misc.</option>
 	<option value="ArgonMisc">Argon Misc.</option>
 	<option value="ScrapYard">Scrap Yard</option>
-	<option value="Vessel">Vessel</option>
+	<option value="BOPVessel">BOP Vessel</option>
+	<option value="RHVessel">RH Vessel</option>
 </select>
 
 <select class="operator">

@@ -27,6 +27,8 @@
 	<tr>
 		<td id="l-sidebar">
 			<?php require 'php/options.php'; ?>
+
+			<?php require 'php/updateAxes.php'; ?>
 		</td>
 
 		<td id="l-main">

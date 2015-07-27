@@ -133,7 +133,9 @@ function fieldExpandCreate(id, target) {
 		['W', 'West']
 	];
 
-	var vesselArr = ['25', '26'];
+	var BOPVesselArr = ['25', '26'];
+
+	var RHVesselArr = ['1', '2'];
 
 	var BOPmiscArr = [
 		['Mg90', 'Desulf Mg90'],
@@ -148,12 +150,16 @@ function fieldExpandCreate(id, target) {
 	var degasserMiscArr = [
 		['RHSlagDepth', 'Slag Depth'],
 		['RHFreeboard', 'Freeboard'],
+		['DecarbTime', 'Decarb Time'],
 		['RHFinalStir', 'Final Stir Time'],
-		['RHHtsOnSnorkel', 'Heats on Snorkel']
+		['RHHtsOnSnorkel', 'Heats on Snorkel'],
+		['ChemTestCount', 'Chem Test Count'],
+		['TreatmentCount', 'Treatment Count']
 	];
 
 	var argonMiscArr = [
-		['TotalStir', 'Total Stir']
+		['TotalStir', 'Total Stir'],
+		['ChemTestCount', 'Chem Test Count']
 	];
 
 
@@ -221,8 +227,11 @@ function fieldExpandCreate(id, target) {
 		case 'ScrapYard':
 			selectCreate(target + ' .select1', scrapYardArr);
 			break;
-		case 'Vessel':
-			selectCreate(target + ' .select1', vesselArr);
+		case 'BOPVessel':
+			selectCreate(target + ' .select1', BOPVesselArr);
+			break;
+		case 'RHVessel':
+			selectCreate(target + ' .select1', RHVesselArr);
 			break;
 		case 'BOPmisc':
 			selectCreate(target + ' .select1', BOPmiscArr);

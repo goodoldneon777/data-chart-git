@@ -1,360 +1,415 @@
 //================================================================
-//===  global.js  =============================================
-//==========================================================
+//===  _master.js  ============================================
+//=========================================================
 
 
-var g = {};
-
-
-// g.OS = 'windows';
-
-
-g.maxRows = 20000;
-
-
-g.error = false;
-
-
-g.errorFunc = function(msg) {
-	'use strict';
-	g.error = true;
-	alert(msg);
-};
-//================================================================
-//===  extensions.js  =========================================
-//==========================================================
-
-
-String.prototype.fieldWrapDelete = function() {
-	'use strict';
-	if (s.OS === 'linux') {
-		var str = this.replace(/\[/g,'');
-		str = str.replace(/\]/g,'');
-		return str;
-	} else if (s.OS === 'windows') {
-		return this.replace(/\"/g,'');
-	}
-};
-
-
-
-String.prototype.fieldWrapAdd = function() {
-	'use strict';
-	if (s.OS === 'linux') {
-		return '[' + this + ']';
-	} else if (s.OS === 'windows') {
-		return '"' + this + '"';
-	}
-};
-
-
-
-String.prototype.fieldWrapToArray = function() {
-	'use strict';
-	var arr = [];
-	if (s.OS === 'linux') {
-		arr = this.match(/\[(.*?)\]/g);
-		if (arr === null ) {
-			arr = [];
-		} else {
-			$.each(arr, function( index, value ) {
-				arr[index] = value;
-			});
+var mMaster = {
+	sql: {},
+	x: {
+		target: '#options-x',
+		sql: {
+			subName: 'subX'
 		}
-		return arr;
-	} else if (s.OS === 'windows') {
-		var arrTemp = this.split('"');
-		arr = [];
-		$.each(arrTemp, function( index, value ) {
-			if (index % 2 > 0) {
-				arr.push(value.fieldWrapAdd());
+	},
+	y: {
+		target: '#options-y',
+		sql: {
+			subName: 'subY'
+		}
+	},
+	moreFilters: {
+		eachFilter: [],
+		sql: {}
+	}
+};
+
+var mSQL = {};
+var mOptions = {};
+var mUpdateAxes = {};
+var mMoreFilters = {};
+var mChart = {};
+
+
+
+$(document).ready( function() {
+	mOptions.init();
+	mUpdateAxes.start();
+	mMoreFilters.init();
+});
+
+
+
+mMaster.queryResultsHandle = function(results, type) {
+	var data = {};
+	
+	data = formatResults(results, type);
+
+	mChart.display(data, mMaster);
+
+
+	function formatResults(results, type) {
+		var rowPrev = [];
+		var x, y, heatID, roundX, roundY, roundYcount, roundYstdev;
+		x = y = heatID = roundX = roundY = roundYcount = roundYstdev = '';
+		var data = {
+			heats: [],
+			averages: []
+		};
+
+
+		$.each(results, function( index, row ) {
+
+			rowPrev = [];
+			if (index > 0) {
+				rowPrev = results[index-1];
 			}
+
+			if (type === 'datetime') {
+				x = Date.parse(row[0]);
+				roundX = Date.parse(row[3]);
+			} else {
+				x = parseFloat(row[0], 4);  //Fix Bug: Decimals showing as strings.
+				roundX = parseFloat(row[3], 4);  //Fix Bug: Decimals showing as strings.
+			}
+
+			y = parseFloat(row[1], 4);  //Fix Bug: Decimals showing as strings.
+			heatID = row[2];
+			roundY = parseFloat(row[4], 4);  //Fix Bug: Decimals showing as strings.
+			roundYcount = row[5];
+			roundYstdev = parseFloat(row[6], 1);  //Fix Bug: Decimals showing as strings.
+
+			data.heats.push( { x: x, y: y, info: heatID } );
+
+			if ($.isNumeric(roundX)) {
+				if (index === 0) {
+					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
+				} else if ( (row[3] !== rowPrev[3])  ||  (row[4] !== rowPrev[4]) ) {
+					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
+				}
+			}
+
 		});
-		return arr;
+
+		
+		return data;
+	}
+
+
+};
+
+
+
+mMaster.submitHandle = function() {
+	var query, type;
+	query = type = '';
+	g.error = false;
+
+	// Validate modules
+	mOptions.validate();
+	mMoreFilters.validate();
+	if (g.error === true) {
+		mOptions.toggleSubmitBtn('enable');
+		return false;
+	}
+
+	// Prepare modules
+	mMaster.prepareModuleOptions();
+	mMaster.prepareModuleMoreFilters();
+
+	// Build the query.
+	mMaster.sql.mainQuery = mSQL.mainQueryBuild(mMaster);
+
+	// Run the query.
+	query = mMaster.sql.mainQuery;
+	type = mMaster.x.type;
+	mSQL.runQuery(query, type);
+	
+};
+
+
+
+mMaster.prepareModuleMoreFilters = function() {
+	'use strict';
+
+	mMoreFilters.getFromDOM();
+
+	createFilters();
+
+	createSubQueries();
+
+	mMaster.moreFilters = mMoreFilters;
+
+
+	function createFilters() {
+		$.each(mMoreFilters.eachFilter, function( index, value ) {
+			mMoreFilters.eachFilter[index].sql.filter = get(value);
+		});
+
+		function get(obj) {
+			var subName = obj.sql.subName;
+			var idFull = obj.sql.idFull;
+			var operator = obj.operator;
+			var input1 = $(obj.target + ' .input1').val();
+			var input2 = $(obj.target + ' .input2').val();
+			var joinType = obj.sql.joinType;
+			var filter = '';
+
+			if (obj.disableOperator === false) {
+				filter = mSQL.createSingleFilter(subName, idFull, operator, input1, input2, joinType);
+			}
+
+			return filter;
+		}
+	}
+
+	function createSubQueries() {
+		var obj = {};
+
+		$.each(mMoreFilters.eachFilter, function( index, value ) {
+			obj = mSQL.subQueryBuild(value.sql.idFull, mMaster.sql.filterGlobal);
+			mMoreFilters.eachFilter[index].sql.query = obj.sql.query;
+		});
 	}
 };
 
 
 
-function nullIfBlank(val) {
+
+mMaster.prepareModuleOptions = function() {
 	'use strict';
-	if (val === '') {
-		return null;
-	} else {
-		return val;
+
+	$.extend(mMaster, mOptions.getFromDOM());
+
+	filters();
+
+	subQueries();
+
+
+	return true;
+
+
+	function filters() {
+		var centralTable = mMaster.x.sql.centralTable;
+		var centralDate = mMaster.x.sql.centralTableDate;
+		var timeMin = mMaster.timeMin;
+		var timeMax = mMaster.timeMax;
+		mMaster.x.sql.filter = createFilter(mMaster.x);
+		mMaster.y.sql.filter = createFilter(mMaster.y);
+		mMaster.sql.filterDate = mSQL.createSingleFilter(centralTable, centralDate, null, timeMin, timeMax, null);
+
+		var tap_yr = timeMin.substr(timeMin.length - 2);
+		mMaster.sql.filterGlobal = 'tap_yr >= \'' + tap_yr + '\' \n';
+
+
+		if (mMaster.tapGrade) {
+			mMaster.sql.filterGrade = 'tap_grd like \'' + mMaster.tapGrade + '\' \n';
+		} else {
+			mMaster.sql.filterGrade = '';
+		}
+
+
+		function createFilter(obj) {
+			var subName = obj.sql.subName;
+			var idFull = obj.sql.idFull;
+			var operator = null;
+			var input1 = $(obj.target + " .min").val();
+			var input2 = $(obj.target + " .max").val();
+			var joinType = obj.sql.joinType;
+
+			var filter = mSQL.createSingleFilter(subName, idFull, operator, input1, input2, joinType);
+
+			return filter;
+		}
 	}
-}
+
+
+	function subQueries() {
+		var obj = {};
+
+		obj = mSQL.subQueryBuild(mMaster.x.sql.idFull, mMaster.sql.filterGlobal);
+		mMaster.x.sql = $.extend(true, {}, mMaster.x.sql, obj.sql);
+
+		obj = mSQL.subQueryBuild(mMaster.y.sql.idFull, mMaster.sql.filterGlobal);
+		mMaster.y.sql = $.extend(true, {}, mMaster.y.sql, obj.sql);
+	}
+
+};
 
 
 
 
-function getUrlParameter(sParam) {
-	'use strict';
-  var sPageURL = window.location.search.substring(1);
-  var sURLVariables = sPageURL.split('&');
-  var val = null;
-  for (var i = 0; i < sURLVariables.length; i++) 
-  {
-      var sParameterName = sURLVariables[i].split('=');
-      if (sParameterName[0] === sParam) 
-      {
-          val = sParameterName[1];
-          break;
-      }
-  }
+mMaster.createSubQueries = function() {
+	var obj = {};
 
-  if (val === undefined) {
-  	val = null;
-  }
+	obj = mSQL.subQueryBuild(mMaster.x.sql.idFull, mMaster.sql.filterGlobal);
+	mMaster.x.sql = $.extend(true, {}, mMaster.x.sql, obj.sql);
 
-  return val;
-}
+	obj = mSQL.subQueryBuild(mMaster.y.sql.idFull, mMaster.sql.filterGlobal);
+	mMaster.y.sql = $.extend(true, {}, mMaster.y.sql, obj.sql);
+};
+
+
+mMaster.createOptionsFilters = function(obj) {
+	var centralTable = mMaster.x.sql.centralTable;
+	var centralDate = mMaster.x.sql.centralTableDate;
+	var timeMin = mMaster.timeMin;
+	var timeMax = mMaster.timeMax;
+	mMaster.x.sql.filter = get(mMaster.x);
+	mMaster.y.sql.filter = get(mMaster.y);
+	mMaster.sql.filterDate = mSQL.createSingleFilter(centralTable, centralDate, null, timeMin, timeMax, null);
+
+	var tap_yr = timeMin.substr(timeMin.length - 2);
+	mMaster.sql.filterGlobal = 'tap_yr >= \'' + tap_yr + '\' \n';
+
+
+	function get(obj) {
+		var subName = obj.sql.subName;
+		var idFull = obj.sql.idFull;
+		var operator = null;
+		var input1 = $(obj.target + " .min").val();
+		var input2 = $(obj.target + " .max").val();
+		var joinType = obj.sql.joinType;
+
+		var filter = mSQL.createSingleFilter(subName, idFull, operator, input1, input2, joinType);
+
+		return filter;
+	}
+
+
+};
+
+
+
+
 
 
 
 
 
 //================================================================
-//===  fieldExpand.js  ========================================
+//===  chart.js  ==============================================
 //==========================================================
 
 
-function fieldExpandCreate(id, target) {
-	'use strict';
-	var html = '';
+
+mChart.display = function(data, mMaster) {
+	$(function () {
+		$('#m-graph').highcharts({
+			chart: {
+				type: 'scatter',
+				animation: false,
+      	zoomType: 'xy'
+			},
+			title: {
+				text: '[' + mMaster.y.title + '] vs [' + mMaster.x.title + ']'
+			},
+			xAxis: {
+				type: mMaster.x.type,
+				// dateTimeLabelFormats: { // don't display the dummy year
+				// 	month: '%e. %b',
+				// 	year: '%b'
+				// },
+				title: {
+					text: mMaster.x.title + ' (' + mMaster.x.unit + ')'
+				},
+				labels: {
+		            format: '{value:' + mMaster.x.format + '}'
+			    }
+			},
+			yAxis: {
+				title: {
+					text: mMaster.y.title + ' (' + mMaster.y.unit + ')'
+				},
+				// min: mMaster.y.min,
+				// max: mMaster.y.max,
+				labels: {
+		            format: '{value:' + mMaster.y.format + '}'
+			    }
+			},
+				tooltip: {
+				snap: 1,
+				headerFormat: '<b>{series.name}</b><br>',
+				// pointFormat:
+				// 	'y: {point.y:' + mMaster.y.format + '} ' + mMaster.y.unit + '<br>' +
+				// 	'x: {point.x:' + mMaster.x.format + '} ' + mMaster.x.unit + '<br>' +
+				// 	'Heat: {point.info}'
+				formatter: function() {
+					if (mMaster.x.type == 'datetime') {
+						var text = 'y: ' + Highcharts.numberFormat(this.point.y, mMaster.y.decimals, '.', ',') + ' ' + mMaster.y.unit + '<br>';
+						if (this.series.name == 'Heats') {
+							text += 'x: ' + Highcharts.dateFormat(mMaster.x.format, this.point.x) + '<br>';
+							text +=	'Heat ID: ' + this.point.info;
+						} else if (this.series.name.substring(0, 7) == 'Average') {
+							text += 'x: ' + Highcharts.dateFormat(mMaster.x.format, this.point.x) + ' (nearest ' + mMaster.x.round + ') <br>';
+							text +=	'Heat Count: ' + this.point.info1 + ' <br>';
+							text +=	'Std Dev: ' + Highcharts.numberFormat(this.point.info2, mMaster.y.decimals + 1);
+						}
+					} else {
+						var text = 'y: ' + Highcharts.numberFormat(this.point.y, mMaster.y.decimals) + ' ' + mMaster.y.unit + '<br>';
+						if (this.series.name == 'Heats') {
+							text += 'x: ' + Highcharts.numberFormat(this.point.x, mMaster.x.decimals) + ' ' + mMaster.x.unit + '<br>';
+							text +=	'Heat ID: ' + this.point.info;
+						} else if (this.series.name.substring(0, 7) == 'Average') {
+							text += 'x: ' + Highcharts.numberFormat(this.point.x, mMaster.x.decimals) + ' ' + mMaster.x.unit + ' (nearest ' + mMaster.x.round + ') <br>';
+							text +=	'Heat Count: ' + this.point.info1 + ' <br>';
+							text +=	'Std Dev: ' + Highcharts.numberFormat(this.point.info2, mMaster.y.decimals + 1);
+						}
+					}
 
 
-	$(target + ' .fieldExpand span').hide();
-	$(target + ' .fieldExpand select').hide();
+					return text;
+				}
+			},
 
+			plotOptions: {
+				spline: {
+					marker: {
+						enabled: true
+					}
+				},
+				series: {
+					turboThreshold: g.maxRows
+				}
+			},
+			line: {
+				visible: false
+			},
 
-	var chemTestArr = [
-		['BLAD', 'BLAD'],
-		['ILAD', 'ILAD'],
-		['BtlAvg', 'HM Bottle Average'],
-		['DsfStartLeco', 'Desulf Initial (Leco)'],
-		['DsfInit', 'Desulf Initial'],
-		['DsfFinal', 'Desulf Final'],
-		['B_V1', 'TD'],
-		['B_L1', 'TOL'],
-		['A_L1', 'Ar 1st'],
-		['A_L2', 'Ar 2nd'],
-		['V_L1', 'RH 1st'],
-		['V_L2', 'RH 2nd'],
-		['L_L1', 'LMF 1st'],
-		['L_L2', 'LMF 2nd'],
-		['C_M1', 'CC M1'],
-		['C_M2', 'CC M2'],
-		['C_M3', 'CC M3'],
-		['MinRef', 'Min (Final Ref)'],
-		['MaxRef', 'Max (Final Ref)'],
-		['AimDesulf', 'Aim (Desulf)'],
-		['AimBOP', 'Aim (BOP)'],
-		['StartBOP', 'Pre-Alloy Pred (BOP)'],
-		['FinalBOP', 'TOL Pred (BOP)'],
-		['AimAr', 'Aim (Argon)']
-	];
-
-	var chemElemArr = [
-		'C', 'Mn', 'P', 'S', 'Si', 'Cu', 'Ni', 'Cr', 'Mo', 'Sn',
-		'Al', 'V', 'Cb', 'Ti', 'B', 'N', 'Ca', 'As', 'Sb'
-	];
-
-	var chemSlagArr = [
-		['FeO_pct', 'FeO'],
-		['Vratio', 'Vratio'],
-		['CaO_pct', 'CaO'],
-		['SiO2_pct', 'SiO2'],
-		['MgO_pct', 'MgO'],
-		['MnO_pct', 'MnO'],
-		['P2O5_pct', 'P2O5'],
-		['S_pct', 'S'],
-		['Al2O3_pct', 'Al2O3'],
-		['TiO2_pct', 'TiO2']
-	];
-
-	var temperatureArr = [
-		['HMLadle', 'HM Ladle'],
-		['Tap', 'Tap'],
-		['TOL', 'TOL'],
-		['ArArrive', 'Ar Arrive'],
-		['ArLeave', 'Ar Leave'],
-		['RHArrive', 'RH Arrive'],
-		['RHDeox', 'RH Deox'],
-		['RHLeave', 'RH Leave'],
-		['CT1', 'CC Tundish 1'],
-		['CT2', 'CC Tundish 2'],
-		['CT3', 'CC Tundish 3'],
-		['AimMelter', 'Aim Melter'],
-		['AimCharge', 'Aim Charge Model']
-	];
-
-	var celoxArr = [
-		['TapO2', 'BOP Tap O2'],
-		['BTO', 'BOP BTO'],
-		['ArArrive', 'Ar Arrive'],
-		['ArLeave', 'Ar Leave'],
-		['RHArrive', 'RH Arrive'],
-		['RHDeox', 'RH Deox'],
-		['RHLeave', 'RH Leave']
-	];
-
-	var furnaceAddArr = [
-		['TotalChargeActual', 'Total Charge'],
-		['MetalActual', 'Metal Charge'],
-		['ScrapActual', 'Scrap Charge'],
-		['MiscActual', 'Misc Charge'],
-		['MetalPctActual', 'Metal Percent'],
-		['ScrapPctActual', 'Scrap Percent'],
-		['TotalChargeModel', 'Total Charge (Model)'],
-		['MetalModel', 'Metal Charge (Model)'],
-		['ScrapModel', 'Scrap Charge (Model)'],
-		['MiscModel', 'Misc Charge (Model)'],
-		['MetalPctModel', 'Metal Percent (Model)'],
-		['ScrapPctModel', 'Scrap Percent (Model)']
-	];
-
-	var ladleAddArr = [
-		['05', 'Reg FeMn'],
-		['12', 'MC FeMn'],
-		['13', 'Al Notch Bar'],
-		['55', 'Al Cones'],
-		['81', 'Coke'],
-		['CS', 'Coke Super Sack'],
-		['15', '75% FeSi'],
-		['62', 'FeB'],
-		['26', 'FeCb'],
-		['95', 'FeTi'],
-		['24', 'FeP'],
-		['43', 'Slag Cond 70%'],
-		['97', 'Ladle Desulf']
-	];
-
-	var scrapArr = [
-		['FAB', '1 Bundles'],
-		['FAF', 'Home'],
-		['FAS', 'Pit + BF Iron'],
-		['FBE', 'Cut Slabs'],
-		['FFR', 'Frag'],
-		['FHS', 'P&S'],
-		['FOH', '1.5 Bundles'],
-		['FRB', 'HMS Demo + Bello Briqs'],
-		['FST', 'Side Trim'],
-		['FTC', 'Tin Can'],
-		['FTU', 'Tundish']
-	];
-
-	var scrapYardArr = [
-		['E', 'East'],
-		['W', 'West']
-	];
-
-	var vesselArr = ['25', '26'];
-
-	var BOPmiscArr = [
-		['Mg90', 'Desulf Mg90'],
-		['Mg90Replunge', 'Desulf Mg90 (Replunge)'],
-		['DsfSkimCrane', 'Desulf Skim (Crane)'],
-		['DsfSkimCalc', 'Desulf Skim (Calc)'],
-		['RecycleWt', 'Recycled Steel Weight'],
-		['TotalN2Cool', 'Total N2 Cool Time'],
-		['TapDur', 'Tap Duration']
-	];
-
-	var degasserMiscArr = [
-		['RHSlagDepth', 'Slag Depth'],
-		['RHFreeboard', 'Freeboard'],
-		['RHFinalStir', 'Final Stir Time'],
-		['RHHtsOnSnorkel', 'Heats on Snorkel']
-	];
-
-	var argonMiscArr = [
-		['TotalStir', 'Total Stir']
-	];
-
-
-
-
-	function selectCreate(target, arr) {
-		var e = $(target);
-		var text = null;
-
-		e.empty();
-
-		$.each(arr, function(row, value) {
-			if ( $.isArray(value) ) {
-				id = value[0];
-				text = value[1];
-			} else {
-				id = text = value;
-			}
-
-			e.append($("<option></option>").attr("value", id).text(text));
+			series: [
+				{
+					name: 'Heats',
+					color: 'rgba(79,129,189,0.4)',
+					data: data.heats,
+					stickyTracking: false,
+					regression: false,
+					regressionSettings: {
+						type: 'linear',
+						color:  'rgba(0, 0, 0, 0.8)'
+					}
+				},
+				{
+					name: 'Average (nearest ' + mMaster.x.round + ')',
+					color: 'rgba(192,80,77,1.0)',
+					marker: {
+						radius: 8,
+						symbol: 'circle'
+					},
+					data: data.averages
+				}
+			]
 		});
-
-		e.show();
-
-		return true;
-	}
+	});
 
 
-	switch (id) {
-		case 'Chem':
-			selectCreate(target + ' .select1', chemTestArr);
-			selectCreate(target + ' .select2', chemElemArr);
-			break;
-		case 'ChemDiff':
-			$(target + ' .message').html('&nbsp;(top minus bottom)');
-			$(target + ' .message').show();
-			selectCreate(target + ' .select1', chemTestArr);
-			selectCreate(target + ' .select2', chemTestArr);
-			selectCreate(target + ' .select3', chemElemArr);
-			break;
-		case 'SlagChem':
-			selectCreate(target + ' .select1', chemSlagArr);
-			break;
-		case 'Temp':
-			selectCreate(target + ' .select1', temperatureArr);
-			break;
-		case 'TempDiff':
-			$(target + ' .message').html('&nbsp;(top minus bottom)');
-			$(target + ' .message').show();
-			selectCreate(target + ' .select1', temperatureArr);
-			selectCreate(target + ' .select2', temperatureArr);
-			break;
-		case 'Celox':
-			selectCreate(target + ' .select1', celoxArr);
-			break;
-		case 'FurnaceAdd':
-			selectCreate(target + ' .select1', furnaceAddArr);
-			break;
-		case 'LadleAdd':
-			selectCreate(target + ' .select1', ladleAddArr);
-			break;
-		case 'Scrap':
-			selectCreate(target + ' .select1', scrapArr);
-			break;
-		case 'ScrapYard':
-			selectCreate(target + ' .select1', scrapYardArr);
-			break;
-		case 'Vessel':
-			selectCreate(target + ' .select1', vesselArr);
-			break;
-		case 'BOPmisc':
-			selectCreate(target + ' .select1', BOPmiscArr);
-			break;
-		case 'DegasserMisc':
-			selectCreate(target + ' .select1', degasserMiscArr);
-			break;
-		case 'ArgonMisc':
-			selectCreate(target + ' .select1', argonMiscArr);
-			break;
-		default:
-			break;
-	}
 
-	return html;
-}
+
+
+		
+
+};
+
+
+
 //================================================================
 //===  definitions.js  ========================================
 //==========================================================
@@ -895,7 +950,7 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.filterRealistic = obj.sql.idFull + ' > 0 ';
 					break;
 				case 'ArArrive':
-					obj.sql.field 	= 'samp_oxy';
+					obj.sql.field 	= 'samp_oxy_dec';
 					obj.sql.table 	= 'ms_heat_celox';
 					obj.sql.db 			= 'USSGLW.dbo';
 					obj.sql.filterLocal =
@@ -904,7 +959,7 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.filterRealistic = obj.sql.idFull + ' > 0 ';
 					break;
 				case 'ArLeave':
-					obj.sql.field 	= 'samp_oxy';
+					obj.sql.field 	= 'samp_oxy_dec';
 					obj.sql.table 	= 'ms_heat_celox';
 					obj.sql.db 			= 'USSGLW.dbo';
 					obj.sql.filterLocal =
@@ -945,7 +1000,7 @@ function getDefinitions(idMain, params, paramsNames) {
 			break;
 		case 'ChargeDTS':
 			obj.sql.idFull 	= (idMain).fieldWrapAdd();
-			obj.title 	= idMain;
+			obj.title 	= 'Charge DTS';
 			obj.type 		= 'datetime';
 			obj.unit 		= '';
 			obj.format 	= '%m/%d/%Y';
@@ -953,10 +1008,10 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.table = 'bop_ht';
 			obj.sql.db 		= 'USSGLW.dbo';
 			break;
-		case 'Vessel':
+		case 'BOPVessel':
 			var vessel 	= params[0];
 			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
-			obj.title 	= idMain;
+			obj.title 	= 'BOP Vessel';
 			obj.type 		= 'text';
 			obj.unit 		= '';
 			obj.format 	= '.f';
@@ -967,13 +1022,27 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.filterLocal = '  and substring(ht_num, 1, 2) = \'' + vessel + '\' ';
 			obj.disableOperator = true;
 			break;
+		case 'RHVessel':
+			var vessel 	= params[0];
+			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
+			obj.title 	= 'RH Vessel';
+			obj.type 		= 'text';
+			obj.unit 		= '';
+			obj.format 	= '.f';
+			obj.decimals 	= 0;
+			obj.sql.field 	= 'active_ves';
+			obj.sql.table 	= 'degas_ht';
+			obj.sql.db 		= 'USSGLW.dbo';
+			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + vessel + '\' ';
+			obj.disableOperator = true;
+			break;
 		case 'BOPmisc':
 			var option 	= params[0];
 			obj.type 		= 'linear';
 			switch (option) {
 				case 'Mg90':
 					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
-					obj.title 	= idMain;
+					obj.title 	= 'Mg90';
 					obj.type 		= 'linear';
 					obj.unit 		= 'lbs';
 					obj.format 	= '.f';
@@ -984,7 +1053,7 @@ function getDefinitions(idMain, params, paramsNames) {
 					break;
 				case 'Mg90Replunge':
 					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
-					obj.title 	= idMain;
+					obj.title 	= 'Mg90 Replunge';
 					obj.type 		= 'linear';
 					obj.unit 		= 'lbs';
 					obj.format 	= '.f';
@@ -1083,6 +1152,35 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.table 	= 'degas_ht';
 					obj.sql.db 		= 'USSGLW.dbo';
 					break;
+				case 'DecarbTime':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'RH Decarb Time';
+					obj.type 		= 'linear';
+					obj.unit 		= 'minutes';
+					obj.format 	= '.1f';
+					obj.decimals 	= 1;
+					obj.sql.field 	= 'freeboard';
+					obj.sql.field =
+						'convert( \n' + 
+						'  decimal(10, 1), \n' + 
+						'  datediff( \n' + 
+						'    second, \n' + 
+						'    max( \n' + 
+						'      case when evt_name like \'CIRC CONFIRMED%\' then evt_dt end \n' + 
+						'    ) over(partition by ht_num, tap_yr, deg_ht_sufx), \n' + 
+						'    max( \n' + 
+						'      case when evt_name like \'DEOX START%\' then evt_dt end \n' + 
+						'    ) over(partition by ht_num, tap_yr, deg_ht_sufx) \n' + 
+						'  )/60.0 \n' + 
+						')';
+					obj.sql.table 	= 'degas_ht_event';
+					obj.sql.db 		= 'USSGLW.dbo';
+					obj.sql.filterLocal =
+						'  and( \n' +
+						'    evt_name like \'CIRC CONFIRMED%\' \n' +
+						'    or evt_name like \'DEOX START%\' \n' +
+						'  )';
+					break;
 				case 'RHFinalStir':
 					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
 					obj.title 	= 'RH Final Stir Time';
@@ -1106,6 +1204,33 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.db 		= 'USSGLW.dbo';
 					obj.sql.filterLocal = '  and degas_ht_equip_usage.equip_cd = \'UPSNKL\' ';
 					break;
+				case 'ChemTestCount':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'RH Chem Test Count';
+					obj.type 		= 'linear';
+					obj.unit 		= 'tests';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.selectDistinct = true;
+					obj.sql.field 	= 'count(test_id) over (partition by ht_num, tap_yr)';
+					obj.sql.table 	= 'ms_ht_chem_samp_anal';
+					obj.sql.db 		= 'USSGLW.dbo';
+					obj.sql.filterLocal =
+						'  and test_id like \'V%\' \n' +
+						'  and elem_cd = \'C\'';
+					break;
+				case 'TreatmentCount':
+					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'RH Treatment Count';
+					obj.type 		= 'text';
+					obj.unit 		= '';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.selectDistinct = true;
+					obj.sql.field 	= 'count(deg_ht_sufx) over(partition by ht_num, tap_yr)';
+					obj.sql.table 	= 'degas_ht';
+					obj.sql.db 		= 'USSGLW.dbo';
+					break;
 				default:
 					break;
 			}
@@ -1124,6 +1249,21 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.field 	= 'convert(decimal(10,1), cum_stir_time)';
 					obj.sql.table 	= 'argon_ht';
 					obj.sql.db 		= 'USSGLW.dbo';
+					break;
+				case 'ChemTestCount':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Ar Chem Test Count';
+					obj.type 		= 'linear';
+					obj.unit 		= 'tests';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.selectDistinct = true;
+					obj.sql.field 	= 'count(test_id) over (partition by ht_num, tap_yr)';
+					obj.sql.table 	= 'ms_ht_chem_samp_anal';
+					obj.sql.db 		= 'USSGLW.dbo';
+					obj.sql.filterLocal =
+						'  and test_id like \'A_L_\' \n' +
+						'  and elem_cd = \'C\'';
 					break;
 				default:
 					break;
@@ -1148,291 +1288,823 @@ function getDefinitions(idMain, params, paramsNames) {
 }
 
 //================================================================
-//===  _master.js  ============================================
-//=========================================================
+//===  extensions.js  =========================================
+//==========================================================
 
 
-var mMaster = {
-	sql: {},
-	x: {
-		target: '#options-x',
-		sql: {
-			subName: 'subX'
-		}
-	},
-	y: {
-		target: '#options-y',
-		sql: {
-			subName: 'subY'
-		}
-	},
-	moreFilters: {
-		eachFilter: [],
-		sql: {}
+String.prototype.fieldWrapDelete = function() {
+	'use strict';
+	if (s.OS === 'linux') {
+		var str = this.replace(/\[/g,'');
+		str = str.replace(/\]/g,'');
+		return str;
+	} else if (s.OS === 'windows') {
+		return this.replace(/\"/g,'');
 	}
 };
 
-var mSQL = {};
-var mOptions = {};
-var mMoreFilters = {};
-var mChart = {};
+
+
+String.prototype.fieldWrapAdd = function() {
+	'use strict';
+	if (s.OS === 'linux') {
+		return '[' + this + ']';
+	} else if (s.OS === 'windows') {
+		return '"' + this + '"';
+	}
+};
 
 
 
-$(document).ready( function() {
-	mOptions.init();
-	mMoreFilters.init();
-});
+String.prototype.fieldWrapToArray = function() {
+	'use strict';
+	var arr = [];
+	if (s.OS === 'linux') {
+		arr = this.match(/\[(.*?)\]/g);
+		if (arr === null ) {
+			arr = [];
+		} else {
+			$.each(arr, function( index, value ) {
+				arr[index] = value;
+			});
+		}
+		return arr;
+	} else if (s.OS === 'windows') {
+		var arrTemp = this.split('"');
+		arr = [];
+		$.each(arrTemp, function( index, value ) {
+			if (index % 2 > 0) {
+				arr.push(value.fieldWrapAdd());
+			}
+		});
+		return arr;
+	}
+};
 
 
 
-mMaster.queryResultsHandle = function(results, type) {
-	var data = {};
-	
-	data = formatResults(results, type);
+function nullIfBlank(val) {
+	'use strict';
+	if (val === '') {
+		return null;
+	} else {
+		return val;
+	}
+}
 
-	mChart.display(data, mMaster);
 
 
-	function formatResults(results, type) {
-		var rowPrev = [];
-		var x, y, heatID, roundX, roundY, roundYcount, roundYstdev;
-		x = y = heatID = roundX = roundY = roundYcount = roundYstdev = '';
-		var data = {
-			heats: [],
-			averages: []
+
+function getUrlParameter(sParam) {
+	'use strict';
+  var sPageURL = window.location.search.substring(1);
+  var sURLVariables = sPageURL.split('&');
+  var val = null;
+  for (var i = 0; i < sURLVariables.length; i++) 
+  {
+      var sParameterName = sURLVariables[i].split('=');
+      if (sParameterName[0] === sParam) 
+      {
+          val = sParameterName[1];
+          break;
+      }
+  }
+
+  if (val === undefined) {
+  	val = null;
+  }
+
+  return val;
+}
+
+
+
+
+
+//================================================================
+//===  fieldExpand.js  ========================================
+//==========================================================
+
+
+function fieldExpandCreate(id, target) {
+	'use strict';
+	var html = '';
+
+
+	$(target + ' .fieldExpand span').hide();
+	$(target + ' .fieldExpand select').hide();
+
+
+	var chemTestArr = [
+		['BLAD', 'BLAD'],
+		['ILAD', 'ILAD'],
+		['BtlAvg', 'HM Bottle Average'],
+		['DsfStartLeco', 'Desulf Initial (Leco)'],
+		['DsfInit', 'Desulf Initial'],
+		['DsfFinal', 'Desulf Final'],
+		['B_V1', 'TD'],
+		['B_L1', 'TOL'],
+		['A_L1', 'Ar 1st'],
+		['A_L2', 'Ar 2nd'],
+		['V_L1', 'RH 1st'],
+		['V_L2', 'RH 2nd'],
+		['L_L1', 'LMF 1st'],
+		['L_L2', 'LMF 2nd'],
+		['C_M1', 'CC M1'],
+		['C_M2', 'CC M2'],
+		['C_M3', 'CC M3'],
+		['MinRef', 'Min (Final Ref)'],
+		['MaxRef', 'Max (Final Ref)'],
+		['AimDesulf', 'Aim (Desulf)'],
+		['AimBOP', 'Aim (BOP)'],
+		['StartBOP', 'Pre-Alloy Pred (BOP)'],
+		['FinalBOP', 'TOL Pred (BOP)'],
+		['AimAr', 'Aim (Argon)']
+	];
+
+	var chemElemArr = [
+		'C', 'Mn', 'P', 'S', 'Si', 'Cu', 'Ni', 'Cr', 'Mo', 'Sn',
+		'Al', 'V', 'Cb', 'Ti', 'B', 'N', 'Ca', 'As', 'Sb'
+	];
+
+	var chemSlagArr = [
+		['FeO_pct', 'FeO'],
+		['Vratio', 'Vratio'],
+		['CaO_pct', 'CaO'],
+		['SiO2_pct', 'SiO2'],
+		['MgO_pct', 'MgO'],
+		['MnO_pct', 'MnO'],
+		['P2O5_pct', 'P2O5'],
+		['S_pct', 'S'],
+		['Al2O3_pct', 'Al2O3'],
+		['TiO2_pct', 'TiO2']
+	];
+
+	var temperatureArr = [
+		['HMLadle', 'HM Ladle'],
+		['Tap', 'Tap'],
+		['TOL', 'TOL'],
+		['ArArrive', 'Ar Arrive'],
+		['ArLeave', 'Ar Leave'],
+		['RHArrive', 'RH Arrive'],
+		['RHDeox', 'RH Deox'],
+		['RHLeave', 'RH Leave'],
+		['CT1', 'CC Tundish 1'],
+		['CT2', 'CC Tundish 2'],
+		['CT3', 'CC Tundish 3'],
+		['AimMelter', 'Aim Melter'],
+		['AimCharge', 'Aim Charge Model']
+	];
+
+	var celoxArr = [
+		['TapO2', 'BOP Tap O2'],
+		['BTO', 'BOP BTO'],
+		['ArArrive', 'Ar Arrive'],
+		['ArLeave', 'Ar Leave'],
+		['RHArrive', 'RH Arrive'],
+		['RHDeox', 'RH Deox'],
+		['RHLeave', 'RH Leave']
+	];
+
+	var furnaceAddArr = [
+		['TotalChargeActual', 'Total Charge'],
+		['MetalActual', 'Metal Charge'],
+		['ScrapActual', 'Scrap Charge'],
+		['MiscActual', 'Misc Charge'],
+		['MetalPctActual', 'Metal Percent'],
+		['ScrapPctActual', 'Scrap Percent'],
+		['TotalChargeModel', 'Total Charge (Model)'],
+		['MetalModel', 'Metal Charge (Model)'],
+		['ScrapModel', 'Scrap Charge (Model)'],
+		['MiscModel', 'Misc Charge (Model)'],
+		['MetalPctModel', 'Metal Percent (Model)'],
+		['ScrapPctModel', 'Scrap Percent (Model)']
+	];
+
+	var ladleAddArr = [
+		['05', 'Reg FeMn'],
+		['12', 'MC FeMn'],
+		['13', 'Al Notch Bar'],
+		['55', 'Al Cones'],
+		['81', 'Coke'],
+		['CS', 'Coke Super Sack'],
+		['15', '75% FeSi'],
+		['62', 'FeB'],
+		['26', 'FeCb'],
+		['95', 'FeTi'],
+		['24', 'FeP'],
+		['43', 'Slag Cond 70%'],
+		['97', 'Ladle Desulf']
+	];
+
+	var scrapArr = [
+		['FAB', '1 Bundles'],
+		['FAF', 'Home'],
+		['FAS', 'Pit + BF Iron'],
+		['FBE', 'Cut Slabs'],
+		['FFR', 'Frag'],
+		['FHS', 'P&S'],
+		['FOH', '1.5 Bundles'],
+		['FRB', 'HMS Demo + Bello Briqs'],
+		['FST', 'Side Trim'],
+		['FTC', 'Tin Can'],
+		['FTU', 'Tundish']
+	];
+
+	var scrapYardArr = [
+		['E', 'East'],
+		['W', 'West']
+	];
+
+	var BOPVesselArr = ['25', '26'];
+
+	var RHVesselArr = ['1', '2'];
+
+	var BOPmiscArr = [
+		['Mg90', 'Desulf Mg90'],
+		['Mg90Replunge', 'Desulf Mg90 (Replunge)'],
+		['DsfSkimCrane', 'Desulf Skim (Crane)'],
+		['DsfSkimCalc', 'Desulf Skim (Calc)'],
+		['RecycleWt', 'Recycled Steel Weight'],
+		['TotalN2Cool', 'Total N2 Cool Time'],
+		['TapDur', 'Tap Duration']
+	];
+
+	var degasserMiscArr = [
+		['RHSlagDepth', 'Slag Depth'],
+		['RHFreeboard', 'Freeboard'],
+		['DecarbTime', 'Decarb Time'],
+		['RHFinalStir', 'Final Stir Time'],
+		['RHHtsOnSnorkel', 'Heats on Snorkel'],
+		['ChemTestCount', 'Chem Test Count'],
+		['TreatmentCount', 'Treatment Count']
+	];
+
+	var argonMiscArr = [
+		['TotalStir', 'Total Stir'],
+		['ChemTestCount', 'Chem Test Count']
+	];
+
+
+
+
+	function selectCreate(target, arr) {
+		var e = $(target);
+		var text = null;
+
+		e.empty();
+
+		$.each(arr, function(row, value) {
+			if ( $.isArray(value) ) {
+				id = value[0];
+				text = value[1];
+			} else {
+				id = text = value;
+			}
+
+			e.append($("<option></option>").attr("value", id).text(text));
+		});
+
+		e.show();
+
+		return true;
+	}
+
+
+	switch (id) {
+		case 'Chem':
+			selectCreate(target + ' .select1', chemTestArr);
+			selectCreate(target + ' .select2', chemElemArr);
+			break;
+		case 'ChemDiff':
+			$(target + ' .message').html('&nbsp;(top minus bottom)');
+			$(target + ' .message').show();
+			selectCreate(target + ' .select1', chemTestArr);
+			selectCreate(target + ' .select2', chemTestArr);
+			selectCreate(target + ' .select3', chemElemArr);
+			break;
+		case 'SlagChem':
+			selectCreate(target + ' .select1', chemSlagArr);
+			break;
+		case 'Temp':
+			selectCreate(target + ' .select1', temperatureArr);
+			break;
+		case 'TempDiff':
+			$(target + ' .message').html('&nbsp;(top minus bottom)');
+			$(target + ' .message').show();
+			selectCreate(target + ' .select1', temperatureArr);
+			selectCreate(target + ' .select2', temperatureArr);
+			break;
+		case 'Celox':
+			selectCreate(target + ' .select1', celoxArr);
+			break;
+		case 'FurnaceAdd':
+			selectCreate(target + ' .select1', furnaceAddArr);
+			break;
+		case 'LadleAdd':
+			selectCreate(target + ' .select1', ladleAddArr);
+			break;
+		case 'Scrap':
+			selectCreate(target + ' .select1', scrapArr);
+			break;
+		case 'ScrapYard':
+			selectCreate(target + ' .select1', scrapYardArr);
+			break;
+		case 'BOPVessel':
+			selectCreate(target + ' .select1', BOPVesselArr);
+			break;
+		case 'RHVessel':
+			selectCreate(target + ' .select1', RHVesselArr);
+			break;
+		case 'BOPmisc':
+			selectCreate(target + ' .select1', BOPmiscArr);
+			break;
+		case 'DegasserMisc':
+			selectCreate(target + ' .select1', degasserMiscArr);
+			break;
+		case 'ArgonMisc':
+			selectCreate(target + ' .select1', argonMiscArr);
+			break;
+		default:
+			break;
+	}
+
+	return html;
+}
+//================================================================
+//===  global.js  =============================================
+//==========================================================
+
+
+var g = {};
+
+
+// g.OS = 'windows';
+
+
+g.maxRows = 20000;
+
+
+g.error = false;
+
+
+g.errorFunc = function(msg) {
+	'use strict';
+	g.error = true;
+	alert(msg);
+};
+//================================================================
+//===  moreFilters.js  ========================================
+//==========================================================
+
+
+mMoreFilters.init = function() {
+	'use strict';
+	$('#m-moreFilters .fieldExpand span').hide();
+	$('#m-moreFilters .fieldExpand select').hide();
+	$('#m-moreFilters .operator').hide();
+	$('#m-moreFilters .range').children().hide();
+
+	mMoreFilters.eachFilter = [];
+
+
+
+	watch();
+
+
+	function watch() {
+		$('#m-moreFilters select').change( function() {
+			mMoreFilters.update( $(this) );
+		});
+	}
+
+};
+
+
+
+mMoreFilters.update = function(changedElem) {
+	'use strict';
+	var changedElemClass = changedElem.attr('class');
+	var target = '#m-moreFilters #' + $(changedElem).closest('div').attr('id');
+	var selection = $(target + ' .' + changedElemClass).val();
+	var idMain = '';
+	var disableOperator = false;
+
+	if ($(changedElem).closest('div').attr('class') === 'fieldExpand') {
+		target = '#m-moreFilters #' + changedElem.parent().parent().attr('id') + ' .fieldExpand';
+		selection = $(target + ' .' + changedElemClass).val();
+		idMain = $('#m-moreFilters #' + changedElem.parent().parent().attr('id') + ' .field').val();
+		changedElemClass = 'fieldExpand';
+	}
+
+	switch ( changedElemClass ) {
+		case 'field':
+			idMain = selection;
+			disableOperator = getDefinitions(idMain, null, null).disableOperator;
+			$(target + ' .fieldExpand select').prop('disabled', false);
+
+			if ( (selection === 'N/A')  ||  (disableOperator) ) {
+				$(target + ' .operator').hide();
+				$(target + ' .range').children().hide();
+			} else {
+				$(target + ' .operator').show();
+				$(target + ' .range .input1').show();
+			}
+			fieldExpandCreate(idMain, target);
+			break;
+		case 'operator':
+			if (selection == 'between'  ||  selection == 'notBetween') {
+				$(target + " .range").children().show();
+			} else {
+				$(target + ' .range .input1').show();
+				$(target + ' .range .and').hide();
+				$(target + ' .range .input2').hide();
+			}
+			break;
+		case 'fieldExpand':
+			toggleSulfurLock(idMain, target);
+			break;
+		default:
+			break;
+	}
+
+
+	return true;
+};
+
+
+
+mMoreFilters.validate = function() {
+	'use strict';
+	var activeFiltersArray = $('#m-moreFilters').find('input:visible');
+
+	$.each(activeFiltersArray, function( index, value ) {
+		var inputContent = $(value).val();
+		if (inputContent === '') {
+			var msg =
+				'ERROR: Missing input.\n\n' +
+				'There\'s an empty input box in the \'More Filters\' section.';
+			g.errorFunc(msg);
+			return false;
+		} else if ( !$.isNumeric(inputContent) ) {
+			var msg =
+				'ERROR: Invalid number.\n\n' +
+				'You entered: \'' + inputContent + '\'\n' +
+				'Correct format: numeric.';
+			g.errorFunc(msg);
+			return false;
+		}
+	});
+
+	return true;
+};
+
+
+
+mMoreFilters.getFromDOM = function() {
+	var obj = {};
+	mMoreFilters.eachFilter = [];  // Reinitialize
+	mMoreFilters.filtersAvailable = $('#m-moreFilters .item').length;
+	mMoreFilters.filtersUsed = 0;  // Initialize
+
+	for (var i = 1; i <= mMoreFilters.filtersAvailable; i++) {
+		obj.target = '#m-moreFilters #filter' + i;
+		obj.sql = {
+			subName: 'filter' + i
 		};
 
-
-		$.each(results, function( index, row ) {
-
-			rowPrev = [];
-			if (index > 0) {
-				rowPrev = results[index-1];
-			}
-
-			if (type === 'datetime') {
-				x = Date.parse(row[0]);
-				roundX = Date.parse(row[3]);
-			} else {
-				x = parseFloat(row[0], 4);  //Fix Bug: Decimals showing as strings.
-				roundX = parseFloat(row[3], 4);  //Fix Bug: Decimals showing as strings.
-			}
-
-			y = parseFloat(row[1], 4);  //Fix Bug: Decimals showing as strings.
-			heatID = row[2];
-			roundY = parseFloat(row[4], 4);  //Fix Bug: Decimals showing as strings.
-			roundYcount = row[5];
-			roundYstdev = parseFloat(row[6], 1);  //Fix Bug: Decimals showing as strings.
-
-			data.heats.push( { x: x, y: y, info: heatID } );
-
-			if ($.isNumeric(roundX)) {
-				if (index === 0) {
-					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
-				} else if ( (row[3] !== rowPrev[3])  ||  (row[4] !== rowPrev[4]) ) {
-					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
-				}
-			}
-
-		});
-
-		
-		return data;
-	}
-
-
-};
-
-
-
-mMaster.submitHandle = function() {
-	var query, type;
-	query = type = '';
-	g.error = false;
-
-	// Validate modules
-	mOptions.validate();
-	mMoreFilters.validate();
-	if (g.error === true) {
-		mOptions.toggleSubmitBtn('enable');
-		return false;
-	}
-
-	// Prepare modules
-	mMaster.prepareModuleOptions();
-	mMaster.prepareModuleMoreFilters();
-
-	// Build the query.
-	mMaster.sql.mainQuery = mSQL.mainQueryBuild(mMaster);
-
-	// Run the query.
-	query = mMaster.sql.mainQuery;
-	type = mMaster.x.type;
-	mSQL.runQuery(query, type);
-	
-};
-
-
-
-mMaster.prepareModuleMoreFilters = function() {
-	'use strict';
-
-	mMoreFilters.getFromDOM();
-
-	createFilters();
-
-	createSubQueries();
-
-	mMaster.moreFilters = mMoreFilters;
-
-
-	function createFilters() {
-		$.each(mMoreFilters.eachFilter, function( index, value ) {
-			mMoreFilters.eachFilter[index].sql.filter = get(value);
-		});
-
-		function get(obj) {
-			var subName = obj.sql.subName;
-			var idFull = obj.sql.idFull;
-			var operator = obj.operator;
-			var input1 = $(obj.target + ' .input1').val();
-			var input2 = $(obj.target + ' .input2').val();
-			var joinType = obj.sql.joinType;
-			var filter = '';
-
-			if (obj.disableOperator === false) {
-				filter = mSQL.createSingleFilter(subName, idFull, operator, input1, input2, joinType);
-			}
-
-			return filter;
+		if ( $(obj.target + ' .field').val() !== 'N/A' ) {
+			mMoreFilters.eachFilter.push( get(obj) );
+			mMoreFilters.filtersUsed += 1;
 		}
 	}
-
-	function createSubQueries() {
-		var obj = {};
-
-		$.each(mMoreFilters.eachFilter, function( index, value ) {
-			obj = mSQL.subQueryBuild(value.sql.idFull, mMaster.sql.filterGlobal);
-			mMoreFilters.eachFilter[index].sql.query = obj.sql.query;
-		});
-	}
-};
-
-
-
-
-mMaster.prepareModuleOptions = function() {
-	'use strict';
-
-	$.extend(mMaster, mOptions.getFromDOM());
-
-	filters();
-
-	subQueries();
 
 
 	return true;
 
 
-	function filters() {
-		var centralTable = mMaster.x.sql.centralTable;
-		var centralDate = mMaster.x.sql.centralTableDate;
-		var timeMin = mMaster.timeMin;
-		var timeMax = mMaster.timeMax;
-		mMaster.x.sql.filter = createFilter(mMaster.x);
-		mMaster.y.sql.filter = createFilter(mMaster.y);
-		mMaster.sql.filterDate = mSQL.createSingleFilter(centralTable, centralDate, null, timeMin, timeMax, null);
+	function get(obj) {
+		var target = obj.target;
+		var selectsArray = [];
 
-		var tap_yr = timeMin.substr(timeMin.length - 2);
-		mMaster.sql.filterGlobal = 'tap_yr >= \'' + tap_yr + '\' \n';
+		obj.idMain = $(target + ' .field option:selected').val();
+		obj.operator = $(target + ' .operator').val();
+
+		obj.paramsVal = [];
+		obj.paramsText = [];
+		selectsArray = $(target + " .fieldExpand").find("select");
+		$.each(selectsArray, function( index, value ) {
+			var selectClass = $(value).attr("class");
+			var val = $(target + " .fieldExpand ." + selectClass + " option:selected").val();
+			var text = $(target + " .fieldExpand ." + selectClass + " option:selected").text();
+			obj.paramsVal.push(val);
+			obj.paramsText.push(text);
+		});
+
+		obj = $.extend(true, {}, obj, getDefinitions(obj.idMain, obj.paramsVal, obj.paramsText));
+
+		return obj;
+	}
+
+};
 
 
-		if (mMaster.tapGrade) {
-			mMaster.sql.filterGrade = 'tap_grd like \'' + mMaster.tapGrade + '\' \n';
+
+
+//================================================================
+//===  options.js  ============================================
+//=========================================================
+
+
+mOptions.init = function() {
+	'use strict';
+	mOptions.toggleSubmitBtn('disable', 'Loading...');
+
+	mOptions.x = {
+		target: '#options-x',
+		sql: {
+			subName: 'subX'
+		}
+	};
+
+	mOptions.y = {
+		target: '#options-y',
+		sql: {
+			subName: 'subY'
+		}
+	};
+
+
+	var date30DaysAgo = moment().subtract(30, 'days').format('M/D/YY');
+	$('#options-filter .dataRange .min').val(date30DaysAgo);
+
+
+	watch();
+
+	$('#m-options #options-x .field').change();
+	$('#m-options #options-y .field').change();
+
+	mOptions.toggleSubmitBtn('enable');
+
+
+	function watch() {
+		$("#m-options select").change( function() {
+			mOptions.update( $(this) );
+		});
+
+		$("#generate").click( function() {
+			mOptions.toggleSubmitBtn('disable', 'Loading...');
+
+			mMaster.submitHandle();
+
+		});
+
+	}
+
+	return true;
+};
+
+
+
+mOptions.update = function(changedElem) {
+	'use strict';
+	var changedElemClass = changedElem.attr('class');
+	var target = '#m-options #' + $(changedElem).closest('div').attr('id');
+	var selection = $(target + ' .' + changedElemClass).val();
+	var idMain = selection;
+	var type = getDefinitions(idMain, null, null).type;
+
+
+	// If the field isn't a number, hide the data range options.
+	if (type != 'linear') {
+		$(target + ' .min').val('');
+		$(target + ' .max').val('');
+		$(target + ' .dataRange').hide();
+	} else {
+		$(target + ' .dataRange').show();
+	}
+
+	if ($(changedElem).closest('div').attr('class') === 'fieldExpand') {
+		target = '#m-options #' + changedElem.parent().parent().attr('id') + ' .fieldExpand';
+		selection = $(target + ' .' + changedElemClass).val();
+		idMain = $('#m-options #' + changedElem.parent().parent().attr('id') + ' .field').val();
+		changedElemClass = 'fieldExpand';
+	}
+
+	switch ( changedElemClass ) {
+		case 'field':
+			idMain = selection;
+			$(target + ' .fieldExpand select').prop('disabled', false);
+
+			if (type != 'linear') {
+				$(target + ' .min').val('');
+				$(target + ' .max').val('');
+				$(target + ' .dataRange').hide();
+			} else {
+				$(target + ' .dataRange').show();
+			}
+
+			fieldExpandCreate(idMain, target);
+			break;
+		case 'fieldExpand':
+			toggleSulfurLock(idMain, target);
+			break;
+		default:
+			break;
+	}
+
+
+
+	return true;
+};
+
+
+
+mOptions.validate = function() {
+	var idMain = '';
+	var type = '';
+	var round = '';
+	var msg = '';
+	var min = null;
+	var max = null;
+
+
+	//checkRequiredInputs();
+	runTests('#options-x');
+	runTests('#options-y');
+	runTests('#options-filter');
+
+	return true;
+
+	
+	function checkRequiredInputs() {
+	
+	}
+
+
+	function runTests(target) {
+		if (target === '#options-filter') {  // If testing the filter section.
+			type = 'datetime';
+
+			min = nullIfBlank($(target + " .min").val());
+
+			if (!min) {
+				msg =
+					'ERROR: Missing minimum date.\n\n' +
+					'You must enter a minimum date in the \'Time Range\' section.';
+				g.errorFunc(msg);
+			}
 		} else {
-			mMaster.sql.filterGrade = '';
+			idMain = $(target + " .field option:selected").val();
+			type = getDefinitions(idMain, null, null).type;
 		}
 
 
-		function createFilter(obj) {
-			var subName = obj.sql.subName;
-			var idFull = obj.sql.idFull;
-			var operator = null;
-			var input1 = $(obj.target + " .min").val();
-			var input2 = $(obj.target + " .max").val();
-			var joinType = obj.sql.joinType;
+		
 
-			var filter = mSQL.createSingleFilter(subName, idFull, operator, input1, input2, joinType);
 
-			return filter;
+		// Validate data range
+		if (type === 'linear') {
+			min = nullIfBlank($(target + " .min").val());
+			max = nullIfBlank($(target + " .max").val());
+
+			if ( (min)  &&  (!$.isNumeric(min)) ) {
+				msg =
+					'ERROR: Invalid number.\n\n' +
+					'You entered: \'' + min + '\'\n' +
+					'Correct format: numeric.';
+				g.errorFunc(msg);
+				return false;
+			} else if ( (max)  &&  (!$.isNumeric(max)) ) {
+				msg =
+					'ERROR: Invalid number.\n\n' +
+					'You entered: \'' + max + '\'\n' +
+					'Correct format: numeric.';
+				g.errorFunc(msg);
+				return false;
+			}
+		} else if (type === 'datetime') {
+			min = nullIfBlank($(target + " .min").val());
+			max = nullIfBlank($(target + " .max").val());
+
+			if ( (min)  &&  (!Date.parse(min)) ) {
+				msg =
+					'ERROR: Invalid date.\n\n' +
+					'You entered: \'' + min + '\'\n' +
+					'Correct format: m/d/yy. For example, 4/23/15 is properly formatted.';
+				g.errorFunc(msg);
+				return false;
+			} else if ( (max)  &&  (!Date.parse(max)) ) {
+				msg =
+					'ERROR: Invalid date.\n\n' +
+					'You entered: \'' + max + '\'\n' +
+					'Correct format: m/d/yy. For example, 4/23/15 is properly formatted.';
+				g.errorFunc(msg);
+				return false;
+			}
 		}
+
+
+
+		// Validate rounding input.
+		round = nullIfBlank( $(target + " .round input").val() );  // Get the rounding factor.
+		if ( (round)  &&  (type === 'datetime') ) {  // If there's a rounding input and it's a date.
+			if ( (round != 'day')  &&  (round != 'week')  &&  (round != 'month')  &&  (round != 'year') ){
+				msg =
+					'ERROR: Invalid rounding factor.\n\n' +
+					'You entered \'' + round + '\'\n' +
+					'Acceptable options: day, week, month and year.';
+				g.errorFunc(msg);
+				return false;
+			}
+		} else if ( (round)  &&  (type === 'linear') ) {  // If there's a rounding input and it's a number.
+			if ( !$.isNumeric(round) ) {
+				msg =
+					'ERROR: Invalid rounding factor.\n\n' +
+					'You entered \'' + round + '\'\n' +
+					'Acceptable options: numeric.';
+				g.errorFunc(msg);
+				return false;
+			}
+		}
+
+
+		return true;
 	}
-
-
-	function subQueries() {
-		var obj = {};
-
-		obj = mSQL.subQueryBuild(mMaster.x.sql.idFull, mMaster.sql.filterGlobal);
-		mMaster.x.sql = $.extend(true, {}, mMaster.x.sql, obj.sql);
-
-		obj = mSQL.subQueryBuild(mMaster.y.sql.idFull, mMaster.sql.filterGlobal);
-		mMaster.y.sql = $.extend(true, {}, mMaster.y.sql, obj.sql);
-	}
-
 };
 
 
 
-
-mMaster.createSubQueries = function() {
-	var obj = {};
-
-	obj = mSQL.subQueryBuild(mMaster.x.sql.idFull, mMaster.sql.filterGlobal);
-	mMaster.x.sql = $.extend(true, {}, mMaster.x.sql, obj.sql);
-
-	obj = mSQL.subQueryBuild(mMaster.y.sql.idFull, mMaster.sql.filterGlobal);
-	mMaster.y.sql = $.extend(true, {}, mMaster.y.sql, obj.sql);
-};
+mOptions.getFromDOM = function() {
+	var selectsArray = [];
 
 
-mMaster.createOptionsFilters = function(obj) {
-	var centralTable = mMaster.x.sql.centralTable;
-	var centralDate = mMaster.x.sql.centralTableDate;
-	var timeMin = mMaster.timeMin;
-	var timeMax = mMaster.timeMax;
-	mMaster.x.sql.filter = get(mMaster.x);
-	mMaster.y.sql.filter = get(mMaster.y);
-	mMaster.sql.filterDate = mSQL.createSingleFilter(centralTable, centralDate, null, timeMin, timeMax, null);
+	mOptions.x = $.extend(true, {}, mOptions.x, get(mOptions.x));
+	mOptions.y = $.extend(true, {}, mOptions.y, get(mOptions.y));
 
-	var tap_yr = timeMin.substr(timeMin.length - 2);
-	mMaster.sql.filterGlobal = 'tap_yr >= \'' + tap_yr + '\' \n';
+	mOptions.timeMin = nullIfBlank($('#options-filter .dataRange .min').val());
+	mOptions.timeMax = nullIfBlank($('#options-filter .dataRange .max').val());
+	mOptions.tapGrade = nullIfBlank($('#options-filter .tapGrade input').val());
 
 
 	function get(obj) {
-		var subName = obj.sql.subName;
-		var idFull = obj.sql.idFull;
-		var operator = null;
-		var input1 = $(obj.target + " .min").val();
-		var input2 = $(obj.target + " .max").val();
-		var joinType = obj.sql.joinType;
+		var target = obj.target;
+		obj.min = nullIfBlank($(target + ' .min').val());
+		obj.max = nullIfBlank($(target + ' .max').val());
 
-		var filter = mSQL.createSingleFilter(subName, idFull, operator, input1, input2, joinType);
+		if (target === '#options-x') {
+			obj.round = nullIfBlank($(target + ' .round input').val());
+		}
 
-		return filter;
+		obj.idMain = $(target + ' .field option:selected').val();
+
+		//
+		obj.paramsVal = [];
+		obj.paramsText = [];
+		selectsArray = $(target + ' .fieldExpand').find('select');
+		$.each(selectsArray, function( index, value ) {
+			var selectClass = $(value).attr("class");
+			var val = $(target + ' .fieldExpand .' + selectClass + ' option:selected').val();
+			var text = $(target + ' .fieldExpand .' + selectClass + ' option:selected').text();
+			obj.paramsVal.push(val);
+			obj.paramsText.push(text);
+		});
+
+		obj = $.extend(true, {}, obj, getDefinitions(obj.idMain, obj.paramsVal, obj.paramsText));
+
+		return obj;
 	}
 
-
+	return {
+		x: mOptions.x,
+		y: mOptions.y,
+		timeMin: mOptions.timeMin,
+		timeMax: mOptions.timeMax,
+		tapGrade: mOptions.tapGrade
+	};
 };
 
 
 
-
-
-
-
-
-
+mOptions.toggleSubmitBtn = function(toggle, text) {
+	var defaultText = 'Generate Chart';
+	if (text === undefined) {
+		text = defaultText;
+	}
+	switch (toggle) {
+		case 'disable':
+			$('#m-options #generate').prop('disabled', true);
+			$('#m-options #generate').val(text);
+			break;
+		case 'enable':
+			$('#m-options #generate').prop('disabled', false);
+			$('#m-options #generate').val(defaultText);
+			break;
+		default:
+			break;
+	}
+	return true;
+};
 //================================================================
 //===  sql.js  ================================================
 //==========================================================
@@ -1577,7 +2249,7 @@ mSQL.mainQueryBuild = function(obj) {
 		'select \n' +
 		'  x, y, heat, roundX, ' + roundYavg + ', ' + roundYcount + ', ' + roundYstdev + ' \n' +
 		'from( \n' +
-		'  select \n' +
+		'  select distinct \n' +
 		'    ' + x + ', ' + y + ', ' + heat + ', ' + roundX + ' \n' + 
 		'  from ' + centralDB + '.' + centralTable + ' ' + centralTable + ' \n' +
 		'  ' + obj.x.sql.joinType + '( \n' +
@@ -1906,568 +2578,93 @@ mSQL.createSingleFilter = function(subName, idFull, operator, input1, input2, jo
 	return filter;
 };
 //================================================================
-//===  options.js  ============================================
+//===  updateAxes.js  ============================================
 //=========================================================
 
 
-mOptions.init = function() {
+
+mUpdateAxes.start = function() {
 	'use strict';
-	mOptions.toggleSubmitBtn('disable', 'Loading...');
 
-	mOptions.x = {
-		target: '#options-x',
-		sql: {
-			subName: 'subX'
-		}
-	};
-
-	mOptions.y = {
-		target: '#options-y',
-		sql: {
-			subName: 'subY'
-		}
-	};
+	function watch() {
+		$("#m-updateAxes .submit .button").click( function() {
+			mUpdateAxes.submitHandle();
+		});
+	}
 
 
-	var date30DaysAgo = moment().subtract(30, 'days').format('M/D/YY');
-	$('#options-filter .dataRange .min').val(date30DaysAgo);
+	mUpdateAxes.initialize();
 
 
 	watch();
 
-	$('#m-options #options-x .field').change();
-	$('#m-options #options-y .field').change();
-
-	mOptions.toggleSubmitBtn('enable');
-
-
-	function watch() {
-		$("#m-options select").change( function() {
-			mOptions.update( $(this) );
-		});
-
-		$("#generate").click( function() {
-			mOptions.toggleSubmitBtn('disable', 'Loading...');
-
-			mMaster.submitHandle();
-
-		});
-
-	}
-
 	return true;
 };
 
 
 
-mOptions.update = function(changedElem) {
+mUpdateAxes.initialize = function() {
 	'use strict';
-	var changedElemClass = changedElem.attr('class');
-	var target = '#m-options #' + $(changedElem).closest('div').attr('id');
-	var selection = $(target + ' .' + changedElemClass).val();
-	var idMain = selection;
-	var type = getDefinitions(idMain, null, null).type;
 
 
-	// If the field isn't a number, hide the data range options.
-	if (type != 'linear') {
-		$(target + ' .min').val('');
-		$(target + ' .max').val('');
-		$(target + ' .dataRange').hide();
-	} else {
-		$(target + ' .dataRange').show();
-	}
-
-	if ($(changedElem).closest('div').attr('class') === 'fieldExpand') {
-		target = '#m-options #' + changedElem.parent().parent().attr('id') + ' .fieldExpand';
-		selection = $(target + ' .' + changedElemClass).val();
-		idMain = $('#m-options #' + changedElem.parent().parent().attr('id') + ' .field').val();
-		changedElemClass = 'fieldExpand';
-	}
-
-	switch ( changedElemClass ) {
-		case 'field':
-			idMain = selection;
-			$(target + ' .fieldExpand select').prop('disabled', false);
-
-			if (type != 'linear') {
-				$(target + ' .min').val('');
-				$(target + ' .max').val('');
-				$(target + ' .dataRange').hide();
-			} else {
-				$(target + ' .dataRange').show();
-			}
-
-			fieldExpandCreate(idMain, target);
-			break;
-		case 'fieldExpand':
-			toggleSulfurLock(idMain, target);
-			break;
-		default:
-			break;
-	}
-
-
-
-	return true;
-};
-
-
-
-mOptions.validate = function() {
-	var idMain = '';
-	var type = '';
-	var round = '';
-	var msg = '';
-	var min = null;
-	var max = null;
-
-
-	//checkRequiredInputs();
-	runTests('#options-x');
-	runTests('#options-y');
-	runTests('#options-filter');
-
-	return true;
-
-	
-	function checkRequiredInputs() {
-	
-	}
-
-
-	function runTests(target) {
-		if (target === '#options-filter') {  // If testing the filter section.
-			type = 'datetime';
-
-			min = nullIfBlank($(target + " .min").val());
-
-			if (!min) {
-				msg =
-					'ERROR: Missing minimum date.\n\n' +
-					'You must enter a minimum date in the \'Time Range\' section.';
-				g.errorFunc(msg);
-			}
-		} else {
-			idMain = $(target + " .field option:selected").val();
-			type = getDefinitions(idMain, null, null).type;
-		}
-
-
-		
-
-
-		// Validate data range
-		if (type === 'linear') {
-			min = nullIfBlank($(target + " .min").val());
-			max = nullIfBlank($(target + " .max").val());
-
-			if ( (min)  &&  (!$.isNumeric(min)) ) {
-				msg =
-					'ERROR: Invalid number.\n\n' +
-					'You entered: \'' + min + '\'\n' +
-					'Correct format: numeric.';
-				g.errorFunc(msg);
-				return false;
-			} else if ( (max)  &&  (!$.isNumeric(max)) ) {
-				msg =
-					'ERROR: Invalid number.\n\n' +
-					'You entered: \'' + max + '\'\n' +
-					'Correct format: numeric.';
-				g.errorFunc(msg);
-				return false;
-			}
-		} else if (type === 'datetime') {
-			min = nullIfBlank($(target + " .min").val());
-			max = nullIfBlank($(target + " .max").val());
-
-			if ( (min)  &&  (!Date.parse(min)) ) {
-				msg =
-					'ERROR: Invalid date.\n\n' +
-					'You entered: \'' + min + '\'\n' +
-					'Correct format: m/d/yy. For example, 4/23/15 is properly formatted.';
-				g.errorFunc(msg);
-				return false;
-			} else if ( (max)  &&  (!Date.parse(max)) ) {
-				msg =
-					'ERROR: Invalid date.\n\n' +
-					'You entered: \'' + max + '\'\n' +
-					'Correct format: m/d/yy. For example, 4/23/15 is properly formatted.';
-				g.errorFunc(msg);
-				return false;
-			}
-		}
-
-
-
-		// Validate rounding input.
-		round = nullIfBlank( $(target + " .round input").val() );  // Get the rounding factor.
-		if ( (round)  &&  (type === 'datetime') ) {  // If there's a rounding input and it's a date.
-			if ( (round != 'day')  &&  (round != 'week')  &&  (round != 'month')  &&  (round != 'year') ){
-				msg =
-					'ERROR: Invalid rounding factor.\n\n' +
-					'You entered \'' + round + '\'\n' +
-					'Acceptable options: day, week, month and year.';
-				g.errorFunc(msg);
-				return false;
-			}
-		} else if ( (round)  &&  (type === 'linear') ) {  // If there's a rounding input and it's a number.
-			if ( !$.isNumeric(round) ) {
-				msg =
-					'ERROR: Invalid rounding factor.\n\n' +
-					'You entered \'' + round + '\'\n' +
-					'Acceptable options: numeric.';
-				g.errorFunc(msg);
-				return false;
-			}
-		}
-
-
-		return true;
-	}
-};
-
-
-
-mOptions.getFromDOM = function() {
-	var selectsArray = [];
-
-
-	mOptions.x = $.extend(true, {}, mOptions.x, get(mOptions.x));
-	mOptions.y = $.extend(true, {}, mOptions.y, get(mOptions.y));
-
-	mOptions.timeMin = nullIfBlank($('#options-filter .dataRange .min').val());
-	mOptions.timeMax = nullIfBlank($('#options-filter .dataRange .max').val());
-	mOptions.tapGrade = nullIfBlank($('#options-filter .tapGrade input').val());
-
-
-	function get(obj) {
-		var target = obj.target;
-		obj.min = nullIfBlank($(target + ' .min').val());
-		obj.max = nullIfBlank($(target + ' .max').val());
-
-		if (target === '#options-x') {
-			obj.round = nullIfBlank($(target + ' .round input').val());
-		}
-
-		obj.idMain = $(target + ' .field option:selected').val();
-
-		//
-		obj.paramsVal = [];
-		obj.paramsText = [];
-		selectsArray = $(target + ' .fieldExpand').find('select');
-		$.each(selectsArray, function( index, value ) {
-			var selectClass = $(value).attr("class");
-			var val = $(target + ' .fieldExpand .' + selectClass + ' option:selected').val();
-			var text = $(target + ' .fieldExpand .' + selectClass + ' option:selected').text();
-			obj.paramsVal.push(val);
-			obj.paramsText.push(text);
-		});
-
-		obj = $.extend(true, {}, obj, getDefinitions(obj.idMain, obj.paramsVal, obj.paramsText));
-
-		return obj;
-	}
-
-	return {
-		x: mOptions.x,
-		y: mOptions.y,
-		timeMin: mOptions.timeMin,
-		timeMax: mOptions.timeMax,
-		tapGrade: mOptions.tapGrade
+	mUpdateAxes.x = {
+		min: null,
+		max: null
 	};
-};
 
-
-
-mOptions.toggleSubmitBtn = function(toggle, text) {
-	var defaultText = 'Generate Chart';
-	if (text === undefined) {
-		text = defaultText;
-	}
-	switch (toggle) {
-		case 'disable':
-			$('#m-options #generate').prop('disabled', true);
-			$('#m-options #generate').val(text);
-			break;
-		case 'enable':
-			$('#m-options #generate').prop('disabled', false);
-			$('#m-options #generate').val(defaultText);
-			break;
-		default:
-			break;
-	}
-	return true;
-};
-//================================================================
-//===  moreFilters.js  ========================================
-//==========================================================
-
-
-mMoreFilters.init = function() {
-	'use strict';
-	$('#m-moreFilters .fieldExpand span').hide();
-	$('#m-moreFilters .fieldExpand select').hide();
-	$('#m-moreFilters .operator').hide();
-	$('#m-moreFilters .range').children().hide();
-
-	mMoreFilters.eachFilter = [];
-
-
-
-	watch();
-
-
-	function watch() {
-		$('#m-moreFilters select').change( function() {
-			mMoreFilters.update( $(this) );
-		});
-	}
-
-};
-
-
-
-mMoreFilters.update = function(changedElem) {
-	'use strict';
-	var changedElemClass = changedElem.attr('class');
-	var target = '#m-moreFilters #' + $(changedElem).closest('div').attr('id');
-	var selection = $(target + ' .' + changedElemClass).val();
-	var idMain = '';
-	var disableOperator = false;
-
-	if ($(changedElem).closest('div').attr('class') === 'fieldExpand') {
-		target = '#m-moreFilters #' + changedElem.parent().parent().attr('id') + ' .fieldExpand';
-		selection = $(target + ' .' + changedElemClass).val();
-		idMain = $('#m-moreFilters #' + changedElem.parent().parent().attr('id') + ' .field').val();
-		changedElemClass = 'fieldExpand';
-	}
-
-	switch ( changedElemClass ) {
-		case 'field':
-			idMain = selection;
-			disableOperator = getDefinitions(idMain, null, null).disableOperator;
-			$(target + ' .fieldExpand select').prop('disabled', false);
-
-			if ( (selection === 'N/A')  ||  (disableOperator) ) {
-				$(target + ' .operator').hide();
-				$(target + ' .range').children().hide();
-			} else {
-				$(target + ' .operator').show();
-				$(target + ' .range .input1').show();
-			}
-			fieldExpandCreate(idMain, target);
-			break;
-		case 'operator':
-			if (selection == 'between'  ||  selection == 'notBetween') {
-				$(target + " .range").children().show();
-			} else {
-				$(target + ' .range .input1').show();
-				$(target + ' .range .and').hide();
-				$(target + ' .range .input2').hide();
-			}
-			break;
-		case 'fieldExpand':
-			toggleSulfurLock(idMain, target);
-			break;
-		default:
-			break;
-	}
-
-
-	return true;
-};
-
-
-
-mMoreFilters.validate = function() {
-	'use strict';
-	var activeFiltersArray = $('#m-moreFilters').find('input:visible');
-
-	$.each(activeFiltersArray, function( index, value ) {
-		var inputContent = $(value).val();
-		if (inputContent === '') {
-			var msg =
-				'ERROR: Missing input.\n\n' +
-				'There\'s an empty input box in the \'More Filters\' section.';
-			g.errorFunc(msg);
-			return false;
-		} else if ( !$.isNumeric(inputContent) ) {
-			var msg =
-				'ERROR: Invalid number.\n\n' +
-				'You entered: \'' + inputContent + '\'\n' +
-				'Correct format: numeric.';
-			g.errorFunc(msg);
-			return false;
-		}
-	});
-
-	return true;
-};
-
-
-
-mMoreFilters.getFromDOM = function() {
-	var obj = {};
-	mMoreFilters.eachFilter = [];  // Reinitialize
-	mMoreFilters.filtersAvailable = $('#m-moreFilters .item').length;
-	mMoreFilters.filtersUsed = 0;  // Initialize
-
-	for (var i = 1; i <= mMoreFilters.filtersAvailable; i++) {
-		obj.target = '#m-moreFilters #filter' + i;
-		obj.sql = {
-			subName: 'filter' + i
-		};
-
-		if ( $(obj.target + ' .field').val() !== 'N/A' ) {
-			mMoreFilters.eachFilter.push( get(obj) );
-			mMoreFilters.filtersUsed += 1;
-		}
-	}
-
-
-	return true;
-
-
-	function get(obj) {
-		var target = obj.target;
-		var selectsArray = [];
-
-		obj.idMain = $(target + ' .field option:selected').val();
-		obj.operator = $(target + ' .operator').val();
-
-		obj.paramsVal = [];
-		obj.paramsText = [];
-		selectsArray = $(target + " .fieldExpand").find("select");
-		$.each(selectsArray, function( index, value ) {
-			var selectClass = $(value).attr("class");
-			var val = $(target + " .fieldExpand ." + selectClass + " option:selected").val();
-			var text = $(target + " .fieldExpand ." + selectClass + " option:selected").text();
-			obj.paramsVal.push(val);
-			obj.paramsText.push(text);
-		});
-
-		obj = $.extend(true, {}, obj, getDefinitions(obj.idMain, obj.paramsVal, obj.paramsText));
-
-		return obj;
-	}
-
-};
-
-
-
-
-//================================================================
-//===  chart.js  ==============================================
-//==========================================================
-
-
-
-mChart.display = function(data, mMaster) {
-		$(function () {
-			$('#m-graph').highcharts({
-				chart: {
-					type: 'scatter',
-					animation: false
-				},
-				title: {
-					text: '[' + mMaster.y.title + '] vs [' + mMaster.x.title + ']'
-				},
-				xAxis: {
-					type: mMaster.x.type,
-					// dateTimeLabelFormats: { // don't display the dummy year
-					// 	month: '%e. %b',
-					// 	year: '%b'
-					// },
-					title: {
-						text: mMaster.x.title + ' (' + mMaster.x.unit + ')'
-					},
-					labels: {
-			            format: '{value:' + mMaster.x.format + '}'
-				    }
-				},
-				yAxis: {
-					title: {
-						text: mMaster.y.title + ' (' + mMaster.y.unit + ')'
-					},
-					// min: mMaster.y.min,
-					// max: mMaster.y.max,
-					labels: {
-			            format: '{value:' + mMaster.y.format + '}'
-				    }
-				},
-					tooltip: {
-					snap: 1,
-					headerFormat: '<b>{series.name}</b><br>',
-					// pointFormat:
-					// 	'y: {point.y:' + mMaster.y.format + '} ' + mMaster.y.unit + '<br>' +
-					// 	'x: {point.x:' + mMaster.x.format + '} ' + mMaster.x.unit + '<br>' +
-					// 	'Heat: {point.info}'
-					formatter: function() {
-						if (mMaster.x.type == 'datetime') {
-							var text = 'y: ' + Highcharts.numberFormat(this.point.y, mMaster.y.decimals, '.', ',') + ' ' + mMaster.y.unit + '<br>';
-							if (this.series.name == 'Heats') {
-								text += 'x: ' + Highcharts.dateFormat(mMaster.x.format, this.point.x) + '<br>';
-								text +=	'Heat ID: ' + this.point.info;
-							} else if (this.series.name.substring(0, 7) == 'Average') {
-								text += 'x: ' + Highcharts.dateFormat(mMaster.x.format, this.point.x) + ' (nearest ' + mMaster.x.round + ') <br>';
-								text +=	'Heat Count: ' + this.point.info1 + ' <br>';
-								text +=	'Std Dev: ' + Highcharts.numberFormat(this.point.info2, mMaster.y.decimals + 1);
-							}
-						} else {
-							var text = 'y: ' + Highcharts.numberFormat(this.point.y, mMaster.y.decimals) + ' ' + mMaster.y.unit + '<br>';
-							if (this.series.name == 'Heats') {
-								text += 'x: ' + Highcharts.numberFormat(this.point.x, mMaster.x.decimals) + ' ' + mMaster.x.unit + '<br>';
-								text +=	'Heat ID: ' + this.point.info;
-							} else if (this.series.name.substring(0, 7) == 'Average') {
-								text += 'x: ' + Highcharts.numberFormat(this.point.x, mMaster.x.decimals) + ' ' + mMaster.x.unit + ' (nearest ' + mMaster.x.round + ') <br>';
-								text +=	'Heat Count: ' + this.point.info1 + ' <br>';
-								text +=	'Std Dev: ' + Highcharts.numberFormat(this.point.info2, mMaster.y.decimals + 1);
-							}
-						}
-
-
-						return text;
-					}
-				},
-
-				plotOptions: {
-					spline: {
-						marker: {
-							enabled: true
-						}
-					},
-					series: {
-						turboThreshold: g.maxRows
-					}
-				},
-				line: {
-					visible: false
-				},
-
-				series: [
-					{
-						name: 'Heats',
-						color: 'rgba(79,129,189,0.4)',
-						data: data.heats,
-						stickyTracking: false,
-						regression: false,
-						regressionSettings: {
-							type: 'linear',
-							color:  'rgba(0, 0, 0, 0.8)'
-						}
-					},
-					{
-						name: 'Average (nearest ' + mMaster.x.round + ')',
-						color: 'rgba(192,80,77,1.0)',
-						marker: {
-							radius: 8,
-							symbol: 'circle'
-						},
-						data: data.averages
-					}
-				]
-			});
-		});
+	mUpdateAxes.y = {
+		min: null,
+		max: null
 	};
+
+
+	return true;
+};
+
+
+
+mUpdateAxes.submitHandle = function() {
+	'use strict';
+
+
+	mUpdateAxes.getFromDOM();
+	mUpdateAxes.updateChart();
+
+
+	return true;
+};
+
+
+
+mUpdateAxes.getFromDOM = function() {
+	'use strict';
+
+
+	mUpdateAxes.x.min = nullIfBlank($('#m-updateAxes .xAxis .min').val());
+	mUpdateAxes.x.max = nullIfBlank($('#m-updateAxes .xAxis .max').val());
+
+	mUpdateAxes.y.min = nullIfBlank($('#m-updateAxes .yAxis .min').val());
+	mUpdateAxes.y.max = nullIfBlank($('#m-updateAxes .yAxis .max').val());
+
+
+	return true;
+};
+
+
+
+mUpdateAxes.updateChart = function() {
+	'use strict';
+	var chart = $('#m-graph').highcharts();
+	// var xMin = mUpdateAxes.x.min;
+	// var xMax = mUpdateAxes.x.max;
+	var yMin = mUpdateAxes.y.min;
+	var yMax = mUpdateAxes.y.max;
+
+
+	// chart.xAxis[0].setExtremes(xMin, xMax);
+	chart.yAxis[0].setExtremes(yMin, yMax);
+
+
+	return true;
+};
 //# sourceMappingURL=main.js.map
