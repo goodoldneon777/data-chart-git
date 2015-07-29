@@ -373,20 +373,6 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.filterLocal = '  and scrp_cd = \'' + matCode + '\'';
 			obj.sql.joinType = 'left outer join';
 			break;
-		case 'ScrapYard':
-			var yard = params[0];
-			obj.sql.idFull = (idMain + ' ' + yard).fieldWrapAdd();
-			obj.title = idMain;
-			obj.type = 'text';
-			obj.unit = '';
-			obj.format = '.f';
-			obj.decimals = 0;
-			obj.sql.field = 'box_1_scale';
-			obj.sql.table = 'bop_ht_scrp_chrg';
-			obj.sql.db = 'USSGLW.dbo';
-			obj.sql.filterLocal = '  and box_1_scale = \'' + yard + '\'';
-			obj.disableOperator = true;
-			break;
 		case 'Temp':
 			var test = params[0];
 			obj.title = idMain + ' ' + paramsNames[0];
@@ -595,34 +581,6 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.field = 'chrg_dt';
 			obj.sql.table = 'bop_ht';
 			obj.sql.db 		= 'USSGLW.dbo';
-			break;
-		case 'BOPVessel':
-			var vessel 	= params[0];
-			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
-			obj.title 	= 'BOP Vessel';
-			obj.type 		= 'text';
-			obj.unit 		= '';
-			obj.format 	= '.f';
-			obj.decimals 	= 0;
-			obj.sql.field 	= 'null';
-			obj.sql.table 	= 'bop_ht';
-			obj.sql.db 		= 'USSGLW.dbo';
-			obj.sql.filterLocal = '  and substring(ht_num, 1, 2) = \'' + vessel + '\' ';
-			obj.disableOperator = true;
-			break;
-		case 'RHVessel':
-			var vessel 	= params[0];
-			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
-			obj.title 	= 'RH Vessel';
-			obj.type 		= 'text';
-			obj.unit 		= '';
-			obj.format 	= '.f';
-			obj.decimals 	= 0;
-			obj.sql.field 	= 'active_ves';
-			obj.sql.table 	= 'degas_ht';
-			obj.sql.db 		= 'USSGLW.dbo';
-			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + vessel + '\' ';
-			obj.disableOperator = true;
 			break;
 		case 'BOPmisc':
 			var option 	= params[0];
@@ -856,6 +814,82 @@ function getDefinitions(idMain, params, paramsNames) {
 				default:
 					break;
 			}
+			break;
+			case 'CCMisc':
+			var option 	= params[0];
+			obj.type 		= 'linear';
+			switch (option) {
+				case 'HeatOfCast':
+					var option 	= params[0];
+					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Heat Of Cast';
+					obj.type 		= 'text';
+					obj.unit 		= '';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.field 	= 'cast_ht_seq_num';
+					obj.sql.table 	= 'cast_ht';
+					obj.sql.db 		= 'USSGLW.dbo';
+					break;
+				default:
+					break;
+			}
+			break;
+		case 'ScrapYard':
+			var yard = params[0];
+			obj.sql.idFull = (idMain + ' ' + yard).fieldWrapAdd();
+			obj.title = idMain;
+			obj.type = 'text';
+			obj.unit = '';
+			obj.format = '.f';
+			obj.decimals = 0;
+			obj.sql.field = 'box_1_scale';
+			obj.sql.table = 'bop_ht_scrp_chrg';
+			obj.sql.db = 'USSGLW.dbo';
+			obj.sql.filterLocal = '  and box_1_scale = \'' + yard + '\'';
+			obj.disableOperator = true;
+			break;
+		case 'BOPVessel':
+			var vessel 	= params[0];
+			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
+			obj.title 	= 'BOP Vessel';
+			obj.type 		= 'text';
+			obj.unit 		= '';
+			obj.format 	= '.f';
+			obj.decimals 	= 0;
+			obj.sql.field 	= 'null';
+			obj.sql.table 	= 'bop_ht';
+			obj.sql.db 		= 'USSGLW.dbo';
+			obj.sql.filterLocal = '  and substring(ht_num, 1, 2) = \'' + vessel + '\' ';
+			obj.disableOperator = true;
+			break;
+		case 'RHVessel':
+			var vessel 	= params[0];
+			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
+			obj.title 	= 'RH Vessel';
+			obj.type 		= 'text';
+			obj.unit 		= '';
+			obj.format 	= '.f';
+			obj.decimals 	= 0;
+			obj.sql.field 	= 'active_ves';
+			obj.sql.table 	= 'degas_ht';
+			obj.sql.db 		= 'USSGLW.dbo';
+			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + vessel + '\' ';
+			obj.disableOperator = true;
+			break;
+		case 'CasterNumber':
+			var caster 	= params[0];
+			obj.sql.idFull 	= (idMain + ' ' + caster).fieldWrapAdd();
+			obj.title 	= 'Caster';
+			obj.type 		= 'text';
+			obj.unit 		= '';
+			obj.format 	= '.f';
+			obj.decimals 	= 0;
+			obj.sql.field 	= 'caster_num';
+			obj.sql.table 	= 'cast_ht';
+			obj.sql.db 		= 'USSGLW.dbo';
+			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + caster + '\' ';
+			obj.disableOperator = true;
 			break;
 		default:
 			break;		

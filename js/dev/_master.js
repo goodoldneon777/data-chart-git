@@ -26,6 +26,7 @@ var mMaster = {
 var mSQL = {};
 var mOptions = {};
 var mUpdateAxes = {};
+var mUpdateSeries = {};
 var mMoreFilters = {};
 var mChart = {};
 
@@ -34,73 +35,19 @@ var mChart = {};
 $(document).ready( function() {
 	mOptions.init();
 	mUpdateAxes.start();
+	mUpdateSeries.start();
 	mMoreFilters.init();
 });
 
 
 
-mMaster.queryResultsHandle = function(results, type) {
-	var data = {};
-	
-	data = formatResults(results, type);
-
-	mChart.display(data, mMaster);
-
-
-	function formatResults(results, type) {
-		var rowPrev = [];
-		var x, y, heatID, roundX, roundY, roundYcount, roundYstdev;
-		x = y = heatID = roundX = roundY = roundYcount = roundYstdev = '';
-		var data = {
-			heats: [],
-			averages: []
-		};
-
-
-		$.each(results, function( index, row ) {
-
-			rowPrev = [];
-			if (index > 0) {
-				rowPrev = results[index-1];
-			}
-
-			if (type === 'datetime') {
-				x = Date.parse(row[0]);
-				roundX = Date.parse(row[3]);
-			} else {
-				x = parseFloat(row[0], 4);  //Fix Bug: Decimals showing as strings.
-				roundX = parseFloat(row[3], 4);  //Fix Bug: Decimals showing as strings.
-			}
-
-			y = parseFloat(row[1], 4);  //Fix Bug: Decimals showing as strings.
-			heatID = row[2];
-			roundY = parseFloat(row[4], 4);  //Fix Bug: Decimals showing as strings.
-			roundYcount = row[5];
-			roundYstdev = parseFloat(row[6], 1);  //Fix Bug: Decimals showing as strings.
-
-			data.heats.push( { x: x, y: y, info: heatID } );
-
-			if ($.isNumeric(roundX)) {
-				if (index === 0) {
-					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
-				} else if ( (row[3] !== rowPrev[3])  ||  (row[4] !== rowPrev[4]) ) {
-					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
-				}
-			}
-
-		});
-
-		
-		return data;
-	}
-
-
-};
-
 
 
 mMaster.submitHandle = function() {
+	'use strict';
 	var query, type;
+
+	
 	query = type = '';
 	g.error = false;
 
@@ -124,6 +71,8 @@ mMaster.submitHandle = function() {
 	type = mMaster.x.type;
 	mSQL.runQuery(query, type);
 	
+
+	return true;
 };
 
 
@@ -171,7 +120,6 @@ mMaster.prepareModuleMoreFilters = function() {
 		});
 	}
 };
-
 
 
 
@@ -237,7 +185,6 @@ mMaster.prepareModuleOptions = function() {
 
 
 
-
 mMaster.createSubQueries = function() {
 	var obj = {};
 
@@ -247,6 +194,7 @@ mMaster.createSubQueries = function() {
 	obj = mSQL.subQueryBuild(mMaster.y.sql.idFull, mMaster.sql.filterGlobal);
 	mMaster.y.sql = $.extend(true, {}, mMaster.y.sql, obj.sql);
 };
+
 
 
 mMaster.createOptionsFilters = function(obj) {
@@ -281,7 +229,63 @@ mMaster.createOptionsFilters = function(obj) {
 
 
 
+mMaster.queryResultsHandle = function(results, type) {
+	var data = {};
+	
+	data = formatResults(results, type);
 
+	mChart.display(data, mMaster);
+
+
+	function formatResults(results, type) {
+		var rowPrev = [];
+		var x, y, heatID, roundX, roundY, roundYcount, roundYstdev;
+		x = y = heatID = roundX = roundY = roundYcount = roundYstdev = '';
+		var data = {
+			heats: [],
+			averages: []
+		};
+
+
+		$.each(results, function( index, row ) {
+
+			rowPrev = [];
+			if (index > 0) {
+				rowPrev = results[index-1];
+			}
+
+			if (type === 'datetime') {
+				x = Date.parse(row[0]);
+				roundX = Date.parse(row[3]);
+			} else {
+				x = parseFloat(row[0], 4);  //Fix Bug: Decimals showing as strings.
+				roundX = parseFloat(row[3], 4);  //Fix Bug: Decimals showing as strings.
+			}
+
+			y = parseFloat(row[1], 4);  //Fix Bug: Decimals showing as strings.
+			heatID = row[2];
+			roundY = parseFloat(row[4], 4);  //Fix Bug: Decimals showing as strings.
+			roundYcount = row[5];
+			roundYstdev = parseFloat(row[6], 1);  //Fix Bug: Decimals showing as strings.
+
+			data.heats.push( { x: x, y: y, info: heatID } );
+
+			if ($.isNumeric(roundX)) {
+				if (index === 0) {
+					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
+				} else if ( (row[3] !== rowPrev[3])  ||  (row[4] !== rowPrev[4]) ) {
+					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
+				}
+			}
+
+		});
+
+		
+		return data;
+	}
+
+
+};
 
 
 

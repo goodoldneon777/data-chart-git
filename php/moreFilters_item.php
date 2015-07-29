@@ -12,9 +12,11 @@
 	<option value="BOPmisc">BOP Misc.</option>
 	<option value="DegasserMisc">Degasser Misc.</option>
 	<option value="ArgonMisc">Argon Misc.</option>
+	<option value="CCMisc">Caster Misc.</option>
 	<option value="ScrapYard">Scrap Yard</option>
 	<option value="BOPVessel">BOP Vessel</option>
 	<option value="RHVessel">RH Vessel</option>
+	<option value="CasterNumber">Caster</option>
 </select>
 
 <select class="operator">

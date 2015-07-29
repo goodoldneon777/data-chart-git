@@ -19,7 +19,7 @@ function fieldExpandCreate(id, target) {
 		['DsfStartLeco', 'Desulf Initial (Leco)'],
 		['DsfInit', 'Desulf Initial'],
 		['DsfFinal', 'Desulf Final'],
-		['B_V1', 'TD'],
+		['B_F1', 'TD'],
 		['B_L1', 'TOL'],
 		['A_L1', 'Ar 1st'],
 		['A_L2', 'Ar 2nd'],
@@ -128,15 +128,6 @@ function fieldExpandCreate(id, target) {
 		['FTU', 'Tundish']
 	];
 
-	var scrapYardArr = [
-		['E', 'East'],
-		['W', 'West']
-	];
-
-	var BOPVesselArr = ['25', '26'];
-
-	var RHVesselArr = ['1', '2'];
-
 	var BOPmiscArr = [
 		['Mg90', 'Desulf Mg90'],
 		['Mg90Replunge', 'Desulf Mg90 (Replunge)'],
@@ -162,7 +153,20 @@ function fieldExpandCreate(id, target) {
 		['ChemTestCount', 'Chem Test Count']
 	];
 
+	var CCMiscArr = [
+		['HeatOfCast', 'Heat of Cast']
+	];
 
+	var scrapYardArr = [
+		['E', 'East'],
+		['W', 'West']
+	];
+
+	var BOPVesselArr = ['25', '26'];
+
+	var RHVesselArr = ['1', '2'];
+
+	var CasterNumberArr = ['1', '2'];
 
 
 	function selectCreate(target, arr) {
@@ -224,6 +228,18 @@ function fieldExpandCreate(id, target) {
 		case 'Scrap':
 			selectCreate(target + ' .select1', scrapArr);
 			break;
+		case 'BOPmisc':
+			selectCreate(target + ' .select1', BOPmiscArr);
+			break;
+		case 'DegasserMisc':
+			selectCreate(target + ' .select1', degasserMiscArr);
+			break;
+		case 'ArgonMisc':
+			selectCreate(target + ' .select1', argonMiscArr);
+			break;
+		case 'CCMisc':
+			selectCreate(target + ' .select1', CCMiscArr);
+			break;
 		case 'ScrapYard':
 			selectCreate(target + ' .select1', scrapYardArr);
 			break;
@@ -233,14 +249,8 @@ function fieldExpandCreate(id, target) {
 		case 'RHVessel':
 			selectCreate(target + ' .select1', RHVesselArr);
 			break;
-		case 'BOPmisc':
-			selectCreate(target + ' .select1', BOPmiscArr);
-			break;
-		case 'DegasserMisc':
-			selectCreate(target + ' .select1', degasserMiscArr);
-			break;
-		case 'ArgonMisc':
-			selectCreate(target + ' .select1', argonMiscArr);
+		case 'CasterNumber':
+			selectCreate(target + ' .select1', CasterNumberArr);
 			break;
 		default:
 			break;

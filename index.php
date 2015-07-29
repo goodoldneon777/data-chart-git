@@ -29,6 +29,8 @@
 			<?php require 'php/options.php'; ?>
 
 			<?php require 'php/updateAxes.php'; ?>
+
+			<?php require 'php/updateSeries.php'; ?>
 		</td>
 
 		<td id="l-main">

@@ -12,6 +12,12 @@ mChart.display = function(data, mMaster) {
 				animation: false,
       	zoomType: 'xy'
 			},
+			credits: {
+        enabled: false
+    	},
+      exporting: {
+      	enabled: false
+      },
 			title: {
 				text: '[' + mMaster.y.title + '] vs [' + mMaster.x.title + ']'
 			},
@@ -46,22 +52,22 @@ mChart.display = function(data, mMaster) {
 				// 	'x: {point.x:' + mMaster.x.format + '} ' + mMaster.x.unit + '<br>' +
 				// 	'Heat: {point.info}'
 				formatter: function() {
-					if (mMaster.x.type == 'datetime') {
+					if (mMaster.x.type === 'datetime') {
 						var text = 'y: ' + Highcharts.numberFormat(this.point.y, mMaster.y.decimals, '.', ',') + ' ' + mMaster.y.unit + '<br>';
-						if (this.series.name == 'Heats') {
-							text += 'x: ' + Highcharts.dateFormat(mMaster.x.format, this.point.x) + '<br>';
+						if (this.series.name === 'Heats') {
+							text += 'x: ' + Highcharts.dateFormat('%m/%d/%Y %I:%M', this.point.x) + '<br>';
 							text +=	'Heat ID: ' + this.point.info;
-						} else if (this.series.name.substring(0, 7) == 'Average') {
+						} else if (this.series.name.substring(0, 7) === 'Average') {
 							text += 'x: ' + Highcharts.dateFormat(mMaster.x.format, this.point.x) + ' (nearest ' + mMaster.x.round + ') <br>';
 							text +=	'Heat Count: ' + this.point.info1 + ' <br>';
 							text +=	'Std Dev: ' + Highcharts.numberFormat(this.point.info2, mMaster.y.decimals + 1);
 						}
 					} else {
 						var text = 'y: ' + Highcharts.numberFormat(this.point.y, mMaster.y.decimals) + ' ' + mMaster.y.unit + '<br>';
-						if (this.series.name == 'Heats') {
+						if (this.series.name === 'Heats') {
 							text += 'x: ' + Highcharts.numberFormat(this.point.x, mMaster.x.decimals) + ' ' + mMaster.x.unit + '<br>';
 							text +=	'Heat ID: ' + this.point.info;
-						} else if (this.series.name.substring(0, 7) == 'Average') {
+						} else if (this.series.name.substring(0, 7) === 'Average') {
 							text += 'x: ' + Highcharts.numberFormat(this.point.x, mMaster.x.decimals) + ' ' + mMaster.x.unit + ' (nearest ' + mMaster.x.round + ') <br>';
 							text +=	'Heat Count: ' + this.point.info1 + ' <br>';
 							text +=	'Std Dev: ' + Highcharts.numberFormat(this.point.info2, mMaster.y.decimals + 1);

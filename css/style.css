@@ -78,7 +78,9 @@
 
 #m-options #generate {
 	margin: 10px;
+	margin-left: 0;
 	padding: 7px;
+	font-size: 1.1em;
 }
 
 #m-options #options-filter .tapGrade input {
@@ -143,11 +145,11 @@
 .sidebox .item {
 	margin-bottom: 10px;
 }
-.sidebox .submit {
+.sidebox .button {
 	text-align: center;
 	margin: 20px;
 }
-.sidebox .submit .button{
+.sidebox .button input{
 	padding: 7px;
 }
 

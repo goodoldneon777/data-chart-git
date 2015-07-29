@@ -16,6 +16,7 @@
 							<option value="BOPmisc">BOP Misc.</option>
 							<option value="DegasserMisc">Degasser Misc.</option>
 							<option value="ArgonMisc">Argon Misc.</option>
+							<option value="CCMisc">Caster Misc.</option>
 						</select>
 						<div class="fieldExpand">
 							<span class="message"></span>
@@ -52,6 +53,7 @@
 							<option value="BOPmisc">BOP Misc.</option>
 							<option value="DegasserMisc">Degasser Misc.</option>
 							<option value="ArgonMisc">Argon Misc.</option>
+							<option value="CCMisc">Caster Misc.</option>
 						</select>
 						<div class="fieldExpand">
 							<span class="message"></span>

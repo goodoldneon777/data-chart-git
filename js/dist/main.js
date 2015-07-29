@@ -26,6 +26,7 @@ var mMaster = {
 var mSQL = {};
 var mOptions = {};
 var mUpdateAxes = {};
+var mUpdateSeries = {};
 var mMoreFilters = {};
 var mChart = {};
 
@@ -34,73 +35,19 @@ var mChart = {};
 $(document).ready( function() {
 	mOptions.init();
 	mUpdateAxes.start();
+	mUpdateSeries.start();
 	mMoreFilters.init();
 });
 
 
 
-mMaster.queryResultsHandle = function(results, type) {
-	var data = {};
-	
-	data = formatResults(results, type);
-
-	mChart.display(data, mMaster);
-
-
-	function formatResults(results, type) {
-		var rowPrev = [];
-		var x, y, heatID, roundX, roundY, roundYcount, roundYstdev;
-		x = y = heatID = roundX = roundY = roundYcount = roundYstdev = '';
-		var data = {
-			heats: [],
-			averages: []
-		};
-
-
-		$.each(results, function( index, row ) {
-
-			rowPrev = [];
-			if (index > 0) {
-				rowPrev = results[index-1];
-			}
-
-			if (type === 'datetime') {
-				x = Date.parse(row[0]);
-				roundX = Date.parse(row[3]);
-			} else {
-				x = parseFloat(row[0], 4);  //Fix Bug: Decimals showing as strings.
-				roundX = parseFloat(row[3], 4);  //Fix Bug: Decimals showing as strings.
-			}
-
-			y = parseFloat(row[1], 4);  //Fix Bug: Decimals showing as strings.
-			heatID = row[2];
-			roundY = parseFloat(row[4], 4);  //Fix Bug: Decimals showing as strings.
-			roundYcount = row[5];
-			roundYstdev = parseFloat(row[6], 1);  //Fix Bug: Decimals showing as strings.
-
-			data.heats.push( { x: x, y: y, info: heatID } );
-
-			if ($.isNumeric(roundX)) {
-				if (index === 0) {
-					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
-				} else if ( (row[3] !== rowPrev[3])  ||  (row[4] !== rowPrev[4]) ) {
-					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
-				}
-			}
-
-		});
-
-		
-		return data;
-	}
-
-
-};
-
 
 
 mMaster.submitHandle = function() {
+	'use strict';
 	var query, type;
+
+	
 	query = type = '';
 	g.error = false;
 
@@ -124,6 +71,8 @@ mMaster.submitHandle = function() {
 	type = mMaster.x.type;
 	mSQL.runQuery(query, type);
 	
+
+	return true;
 };
 
 
@@ -171,7 +120,6 @@ mMaster.prepareModuleMoreFilters = function() {
 		});
 	}
 };
-
 
 
 
@@ -237,7 +185,6 @@ mMaster.prepareModuleOptions = function() {
 
 
 
-
 mMaster.createSubQueries = function() {
 	var obj = {};
 
@@ -247,6 +194,7 @@ mMaster.createSubQueries = function() {
 	obj = mSQL.subQueryBuild(mMaster.y.sql.idFull, mMaster.sql.filterGlobal);
 	mMaster.y.sql = $.extend(true, {}, mMaster.y.sql, obj.sql);
 };
+
 
 
 mMaster.createOptionsFilters = function(obj) {
@@ -281,7 +229,63 @@ mMaster.createOptionsFilters = function(obj) {
 
 
 
+mMaster.queryResultsHandle = function(results, type) {
+	var data = {};
+	
+	data = formatResults(results, type);
 
+	mChart.display(data, mMaster);
+
+
+	function formatResults(results, type) {
+		var rowPrev = [];
+		var x, y, heatID, roundX, roundY, roundYcount, roundYstdev;
+		x = y = heatID = roundX = roundY = roundYcount = roundYstdev = '';
+		var data = {
+			heats: [],
+			averages: []
+		};
+
+
+		$.each(results, function( index, row ) {
+
+			rowPrev = [];
+			if (index > 0) {
+				rowPrev = results[index-1];
+			}
+
+			if (type === 'datetime') {
+				x = Date.parse(row[0]);
+				roundX = Date.parse(row[3]);
+			} else {
+				x = parseFloat(row[0], 4);  //Fix Bug: Decimals showing as strings.
+				roundX = parseFloat(row[3], 4);  //Fix Bug: Decimals showing as strings.
+			}
+
+			y = parseFloat(row[1], 4);  //Fix Bug: Decimals showing as strings.
+			heatID = row[2];
+			roundY = parseFloat(row[4], 4);  //Fix Bug: Decimals showing as strings.
+			roundYcount = row[5];
+			roundYstdev = parseFloat(row[6], 1);  //Fix Bug: Decimals showing as strings.
+
+			data.heats.push( { x: x, y: y, info: heatID } );
+
+			if ($.isNumeric(roundX)) {
+				if (index === 0) {
+					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
+				} else if ( (row[3] !== rowPrev[3])  ||  (row[4] !== rowPrev[4]) ) {
+					data.averages.push( { x: roundX, y: roundY, info1: roundYcount, info2: roundYstdev } );
+				}
+			}
+
+		});
+
+		
+		return data;
+	}
+
+
+};
 
 
 
@@ -300,6 +304,12 @@ mChart.display = function(data, mMaster) {
 				animation: false,
       	zoomType: 'xy'
 			},
+			credits: {
+        enabled: false
+    	},
+      exporting: {
+      	enabled: false
+      },
 			title: {
 				text: '[' + mMaster.y.title + '] vs [' + mMaster.x.title + ']'
 			},
@@ -334,22 +344,22 @@ mChart.display = function(data, mMaster) {
 				// 	'x: {point.x:' + mMaster.x.format + '} ' + mMaster.x.unit + '<br>' +
 				// 	'Heat: {point.info}'
 				formatter: function() {
-					if (mMaster.x.type == 'datetime') {
+					if (mMaster.x.type === 'datetime') {
 						var text = 'y: ' + Highcharts.numberFormat(this.point.y, mMaster.y.decimals, '.', ',') + ' ' + mMaster.y.unit + '<br>';
-						if (this.series.name == 'Heats') {
-							text += 'x: ' + Highcharts.dateFormat(mMaster.x.format, this.point.x) + '<br>';
+						if (this.series.name === 'Heats') {
+							text += 'x: ' + Highcharts.dateFormat('%m/%d/%Y %I:%M', this.point.x) + '<br>';
 							text +=	'Heat ID: ' + this.point.info;
-						} else if (this.series.name.substring(0, 7) == 'Average') {
+						} else if (this.series.name.substring(0, 7) === 'Average') {
 							text += 'x: ' + Highcharts.dateFormat(mMaster.x.format, this.point.x) + ' (nearest ' + mMaster.x.round + ') <br>';
 							text +=	'Heat Count: ' + this.point.info1 + ' <br>';
 							text +=	'Std Dev: ' + Highcharts.numberFormat(this.point.info2, mMaster.y.decimals + 1);
 						}
 					} else {
 						var text = 'y: ' + Highcharts.numberFormat(this.point.y, mMaster.y.decimals) + ' ' + mMaster.y.unit + '<br>';
-						if (this.series.name == 'Heats') {
+						if (this.series.name === 'Heats') {
 							text += 'x: ' + Highcharts.numberFormat(this.point.x, mMaster.x.decimals) + ' ' + mMaster.x.unit + '<br>';
 							text +=	'Heat ID: ' + this.point.info;
-						} else if (this.series.name.substring(0, 7) == 'Average') {
+						} else if (this.series.name.substring(0, 7) === 'Average') {
 							text += 'x: ' + Highcharts.numberFormat(this.point.x, mMaster.x.decimals) + ' ' + mMaster.x.unit + ' (nearest ' + mMaster.x.round + ') <br>';
 							text +=	'Heat Count: ' + this.point.info1 + ' <br>';
 							text +=	'Std Dev: ' + Highcharts.numberFormat(this.point.info2, mMaster.y.decimals + 1);
@@ -785,20 +795,6 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.filterLocal = '  and scrp_cd = \'' + matCode + '\'';
 			obj.sql.joinType = 'left outer join';
 			break;
-		case 'ScrapYard':
-			var yard = params[0];
-			obj.sql.idFull = (idMain + ' ' + yard).fieldWrapAdd();
-			obj.title = idMain;
-			obj.type = 'text';
-			obj.unit = '';
-			obj.format = '.f';
-			obj.decimals = 0;
-			obj.sql.field = 'box_1_scale';
-			obj.sql.table = 'bop_ht_scrp_chrg';
-			obj.sql.db = 'USSGLW.dbo';
-			obj.sql.filterLocal = '  and box_1_scale = \'' + yard + '\'';
-			obj.disableOperator = true;
-			break;
 		case 'Temp':
 			var test = params[0];
 			obj.title = idMain + ' ' + paramsNames[0];
@@ -1007,34 +1003,6 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.field = 'chrg_dt';
 			obj.sql.table = 'bop_ht';
 			obj.sql.db 		= 'USSGLW.dbo';
-			break;
-		case 'BOPVessel':
-			var vessel 	= params[0];
-			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
-			obj.title 	= 'BOP Vessel';
-			obj.type 		= 'text';
-			obj.unit 		= '';
-			obj.format 	= '.f';
-			obj.decimals 	= 0;
-			obj.sql.field 	= 'null';
-			obj.sql.table 	= 'bop_ht';
-			obj.sql.db 		= 'USSGLW.dbo';
-			obj.sql.filterLocal = '  and substring(ht_num, 1, 2) = \'' + vessel + '\' ';
-			obj.disableOperator = true;
-			break;
-		case 'RHVessel':
-			var vessel 	= params[0];
-			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
-			obj.title 	= 'RH Vessel';
-			obj.type 		= 'text';
-			obj.unit 		= '';
-			obj.format 	= '.f';
-			obj.decimals 	= 0;
-			obj.sql.field 	= 'active_ves';
-			obj.sql.table 	= 'degas_ht';
-			obj.sql.db 		= 'USSGLW.dbo';
-			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + vessel + '\' ';
-			obj.disableOperator = true;
 			break;
 		case 'BOPmisc':
 			var option 	= params[0];
@@ -1269,6 +1237,82 @@ function getDefinitions(idMain, params, paramsNames) {
 					break;
 			}
 			break;
+			case 'CCMisc':
+			var option 	= params[0];
+			obj.type 		= 'linear';
+			switch (option) {
+				case 'HeatOfCast':
+					var option 	= params[0];
+					obj.sql.idFull 	= (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Heat Of Cast';
+					obj.type 		= 'text';
+					obj.unit 		= '';
+					obj.format 	= '.f';
+					obj.decimals 	= 0;
+					obj.sql.field 	= 'cast_ht_seq_num';
+					obj.sql.table 	= 'cast_ht';
+					obj.sql.db 		= 'USSGLW.dbo';
+					break;
+				default:
+					break;
+			}
+			break;
+		case 'ScrapYard':
+			var yard = params[0];
+			obj.sql.idFull = (idMain + ' ' + yard).fieldWrapAdd();
+			obj.title = idMain;
+			obj.type = 'text';
+			obj.unit = '';
+			obj.format = '.f';
+			obj.decimals = 0;
+			obj.sql.field = 'box_1_scale';
+			obj.sql.table = 'bop_ht_scrp_chrg';
+			obj.sql.db = 'USSGLW.dbo';
+			obj.sql.filterLocal = '  and box_1_scale = \'' + yard + '\'';
+			obj.disableOperator = true;
+			break;
+		case 'BOPVessel':
+			var vessel 	= params[0];
+			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
+			obj.title 	= 'BOP Vessel';
+			obj.type 		= 'text';
+			obj.unit 		= '';
+			obj.format 	= '.f';
+			obj.decimals 	= 0;
+			obj.sql.field 	= 'null';
+			obj.sql.table 	= 'bop_ht';
+			obj.sql.db 		= 'USSGLW.dbo';
+			obj.sql.filterLocal = '  and substring(ht_num, 1, 2) = \'' + vessel + '\' ';
+			obj.disableOperator = true;
+			break;
+		case 'RHVessel':
+			var vessel 	= params[0];
+			obj.sql.idFull 	= (idMain + ' ' + vessel).fieldWrapAdd();
+			obj.title 	= 'RH Vessel';
+			obj.type 		= 'text';
+			obj.unit 		= '';
+			obj.format 	= '.f';
+			obj.decimals 	= 0;
+			obj.sql.field 	= 'active_ves';
+			obj.sql.table 	= 'degas_ht';
+			obj.sql.db 		= 'USSGLW.dbo';
+			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + vessel + '\' ';
+			obj.disableOperator = true;
+			break;
+		case 'CasterNumber':
+			var caster 	= params[0];
+			obj.sql.idFull 	= (idMain + ' ' + caster).fieldWrapAdd();
+			obj.title 	= 'Caster';
+			obj.type 		= 'text';
+			obj.unit 		= '';
+			obj.format 	= '.f';
+			obj.decimals 	= 0;
+			obj.sql.field 	= 'caster_num';
+			obj.sql.table 	= 'cast_ht';
+			obj.sql.db 		= 'USSGLW.dbo';
+			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + caster + '\' ';
+			obj.disableOperator = true;
+			break;
 		default:
 			break;		
 	}
@@ -1402,7 +1446,7 @@ function fieldExpandCreate(id, target) {
 		['DsfStartLeco', 'Desulf Initial (Leco)'],
 		['DsfInit', 'Desulf Initial'],
 		['DsfFinal', 'Desulf Final'],
-		['B_V1', 'TD'],
+		['B_F1', 'TD'],
 		['B_L1', 'TOL'],
 		['A_L1', 'Ar 1st'],
 		['A_L2', 'Ar 2nd'],
@@ -1511,15 +1555,6 @@ function fieldExpandCreate(id, target) {
 		['FTU', 'Tundish']
 	];
 
-	var scrapYardArr = [
-		['E', 'East'],
-		['W', 'West']
-	];
-
-	var BOPVesselArr = ['25', '26'];
-
-	var RHVesselArr = ['1', '2'];
-
 	var BOPmiscArr = [
 		['Mg90', 'Desulf Mg90'],
 		['Mg90Replunge', 'Desulf Mg90 (Replunge)'],
@@ -1545,7 +1580,20 @@ function fieldExpandCreate(id, target) {
 		['ChemTestCount', 'Chem Test Count']
 	];
 
+	var CCMiscArr = [
+		['HeatOfCast', 'Heat of Cast']
+	];
 
+	var scrapYardArr = [
+		['E', 'East'],
+		['W', 'West']
+	];
+
+	var BOPVesselArr = ['25', '26'];
+
+	var RHVesselArr = ['1', '2'];
+
+	var CasterNumberArr = ['1', '2'];
 
 
 	function selectCreate(target, arr) {
@@ -1607,6 +1655,18 @@ function fieldExpandCreate(id, target) {
 		case 'Scrap':
 			selectCreate(target + ' .select1', scrapArr);
 			break;
+		case 'BOPmisc':
+			selectCreate(target + ' .select1', BOPmiscArr);
+			break;
+		case 'DegasserMisc':
+			selectCreate(target + ' .select1', degasserMiscArr);
+			break;
+		case 'ArgonMisc':
+			selectCreate(target + ' .select1', argonMiscArr);
+			break;
+		case 'CCMisc':
+			selectCreate(target + ' .select1', CCMiscArr);
+			break;
 		case 'ScrapYard':
 			selectCreate(target + ' .select1', scrapYardArr);
 			break;
@@ -1616,14 +1676,8 @@ function fieldExpandCreate(id, target) {
 		case 'RHVessel':
 			selectCreate(target + ' .select1', RHVesselArr);
 			break;
-		case 'BOPmisc':
-			selectCreate(target + ' .select1', BOPmiscArr);
-			break;
-		case 'DegasserMisc':
-			selectCreate(target + ' .select1', degasserMiscArr);
-			break;
-		case 'ArgonMisc':
-			selectCreate(target + ' .select1', argonMiscArr);
+		case 'CasterNumber':
+			selectCreate(target + ' .select1', CasterNumberArr);
 			break;
 		default:
 			break;
@@ -2587,7 +2641,7 @@ mUpdateAxes.start = function() {
 	'use strict';
 
 	function watch() {
-		$("#m-updateAxes .submit .button").click( function() {
+		$("#m-updateAxes #updateAxes").click( function() {
 			mUpdateAxes.submitHandle();
 		});
 	}
@@ -2638,13 +2692,26 @@ mUpdateAxes.submitHandle = function() {
 
 mUpdateAxes.getFromDOM = function() {
 	'use strict';
+	var xMin = nullIfBlank($('#m-updateAxes .xAxis .min').val());
+	var xMax = nullIfBlank($('#m-updateAxes .xAxis .max').val());
+	var yMin = nullIfBlank($('#m-updateAxes .yAxis .min').val());
+	var yMax = nullIfBlank($('#m-updateAxes .yAxis .max').val());
 
 
-	mUpdateAxes.x.min = nullIfBlank($('#m-updateAxes .xAxis .min').val());
-	mUpdateAxes.x.max = nullIfBlank($('#m-updateAxes .xAxis .max').val());
+	if ( Date.parse(xMin) ) {
+		xMin = Date.parse(xMin);
+	}
 
-	mUpdateAxes.y.min = nullIfBlank($('#m-updateAxes .yAxis .min').val());
-	mUpdateAxes.y.max = nullIfBlank($('#m-updateAxes .yAxis .max').val());
+	if ( Date.parse(xMax) ) {
+		xMax = Date.parse(xMax);
+	}
+
+
+	mUpdateAxes.x.min = xMin;
+	mUpdateAxes.x.max = xMax
+
+	mUpdateAxes.y.min = yMin;
+	mUpdateAxes.y.max = yMax;
 
 
 	return true;
@@ -2655,14 +2722,111 @@ mUpdateAxes.getFromDOM = function() {
 mUpdateAxes.updateChart = function() {
 	'use strict';
 	var chart = $('#m-graph').highcharts();
-	// var xMin = mUpdateAxes.x.min;
-	// var xMax = mUpdateAxes.x.max;
+	var xMin = mUpdateAxes.x.min;
+	var xMax = mUpdateAxes.x.max;
 	var yMin = mUpdateAxes.y.min;
 	var yMax = mUpdateAxes.y.max;
 
 
-	// chart.xAxis[0].setExtremes(xMin, xMax);
+	chart.xAxis[0].setExtremes(xMin, xMax);
 	chart.yAxis[0].setExtremes(yMin, yMax);
+
+
+	return true;
+};
+//================================================================
+//===  updateSeries.js  ============================================
+//=========================================================
+
+
+
+mUpdateSeries.start = function() {
+	'use strict';
+
+	function watch() {
+		$("#m-updateSeries #toggleVisibility").click( function() {
+			mUpdateSeries.toggleVisibility();
+		});
+	}
+
+
+	// mUpdateSeries.initialize();
+
+
+	watch();
+
+	return true;
+};
+
+
+
+mUpdateSeries.initialize = function() {
+	'use strict';
+	return true;
+};
+
+
+
+mUpdateSeries.submitHandle = function() {
+	'use strict';
+	return true;
+};
+
+
+
+mUpdateSeries.getFromDOM = function() {
+	'use strict';
+	return true;
+};
+
+
+
+
+
+
+mUpdateSeries.toggleVisibility = function() {
+	'use strict';
+	var chart = $('#m-graph').highcharts();
+	var opacityOriginal = 0.4;
+	var color = chart.series[0].color;
+	var colorSplit = color.split(',');
+	var rgb = colorSplit[0] + ',' + colorSplit[1] + ',' + colorSplit[2];
+	var opacity = colorSplit[colorSplit.length - 1];
+
+
+	if (color.substring(0, 4) !== 'rgba') {
+		return false;
+	}
+
+
+	opacity = opacity.substring(0, opacity.length - 1);
+	opacity = parseFloat(opacity, 2);
+
+
+	if (opacity < 1) {
+		opacity = 1;
+	} else {
+		opacity = opacityOriginal;
+	}
+
+	color = rgb + ',' + opacity + ')';
+
+	chart.series[0].update({
+      color: color
+  });
+
+
+
+	// If opacity is not 100%, change to 100%;
+	// if (chart.series[0].color === 'rgba(79,129,189,0.4)') {
+	// 	chart.series[0].update({
+	//       color: 'rgba(79,129,189,1)'
+	//   });
+	// } else {
+	// 	chart.series[0].update({
+ //      color: 'rgba(79,129,189,0.4)'
+ //  	});
+	// }
 
 
 	return true;
