@@ -25,10 +25,10 @@ mSQL.runQuery = function(query, type) {
 		},
 		dataType: 'json',
 		success: function(results) {
-			if (results.length > g.maxRows) {
+			if (results.data.length > g.maxRows) {
 				alert(
 					'Too many results. Please narrow your search. \n\n' +
-					'Results: ' + results.length + ' heats \n' +
+					'Results: ' + results.data.length + ' heats \n' +
 					'Max: ' + g.maxRows + ' heats \n'
 				);
 			}

@@ -51,7 +51,7 @@ function getDefinitions(idMain, params, paramsNames) {
 	obj.sql.centralTable = 'bop_ht';
 	obj.sql.centralDB = 'USSGLW.dbo';
 	obj.sql.centralTableHeat = 'ht_num';
-	obj.sql.centralTableDate = 'chrg_dt';
+	obj.sql.centralTableDate = 'tap_st_dt';
 	obj.sql.joinKeyArray = ['ht_num', 'tap_yr'];
 	
 
@@ -572,13 +572,13 @@ function getDefinitions(idMain, params, paramsNames) {
 					break;
 			}
 			break;
-		case 'ChargeDTS':
+		case 'TapDTS':
 			obj.sql.idFull 	= (idMain).fieldWrapAdd();
-			obj.title 	= 'Charge DTS';
+			obj.title 	= 'Tap DTS';
 			obj.type 		= 'datetime';
 			obj.unit 		= '';
 			obj.format 	= '%m/%d/%Y';
-			obj.sql.field = 'chrg_dt';
+			obj.sql.field = 'tap_st_dt';
 			obj.sql.table = 'bop_ht';
 			obj.sql.db 		= 'USSGLW.dbo';
 			break;

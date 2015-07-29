@@ -40,7 +40,7 @@
 						<div class="title">X-Axis</div>
 
 						<select class="field">
-							<option value="ChargeDTS">Charge Date/Time</option>
+							<option value="TapDTS">Tap Date/Time</option>
 							<option value="Temp">Temperature</option>
 							<option value="TempDiff">Temp. Difference</option>
 							<option value="Celox">Celox</option>

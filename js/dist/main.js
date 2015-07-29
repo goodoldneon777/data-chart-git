@@ -473,7 +473,7 @@ function getDefinitions(idMain, params, paramsNames) {
 	obj.sql.centralTable = 'bop_ht';
 	obj.sql.centralDB = 'USSGLW.dbo';
 	obj.sql.centralTableHeat = 'ht_num';
-	obj.sql.centralTableDate = 'chrg_dt';
+	obj.sql.centralTableDate = 'tap_st_dt';
 	obj.sql.joinKeyArray = ['ht_num', 'tap_yr'];
 	
 
@@ -994,13 +994,13 @@ function getDefinitions(idMain, params, paramsNames) {
 					break;
 			}
 			break;
-		case 'ChargeDTS':
+		case 'TapDTS':
 			obj.sql.idFull 	= (idMain).fieldWrapAdd();
-			obj.title 	= 'Charge DTS';
+			obj.title 	= 'Tap DTS';
 			obj.type 		= 'datetime';
 			obj.unit 		= '';
 			obj.format 	= '%m/%d/%Y';
-			obj.sql.field = 'chrg_dt';
+			obj.sql.field = 'tap_st_dt';
 			obj.sql.table = 'bop_ht';
 			obj.sql.db 		= 'USSGLW.dbo';
 			break;
@@ -2186,10 +2186,10 @@ mSQL.runQuery = function(query, type) {
 		},
 		dataType: 'json',
 		success: function(results) {
-			if (results.length > g.maxRows) {
+			if (results.data.length > g.maxRows) {
 				alert(
 					'Too many results. Please narrow your search. \n\n' +
-					'Results: ' + results.length + ' heats \n' +
+					'Results: ' + results.data.length + ' heats \n' +
 					'Max: ' + g.maxRows + ' heats \n'
 				);
 			}
@@ -2814,19 +2814,6 @@ mUpdateSeries.toggleVisibility = function() {
 	chart.series[0].update({
       color: color
   });
-
-
-
-	// If opacity is not 100%, change to 100%;
-	// if (chart.series[0].color === 'rgba(79,129,189,0.4)') {
-	// 	chart.series[0].update({
-	//       color: 'rgba(79,129,189,1)'
-	//   });
-	// } else {
-	// 	chart.series[0].update({
- //      color: 'rgba(79,129,189,0.4)'
- //  	});
-	// }
 
 
 	return true;
