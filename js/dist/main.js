@@ -462,6 +462,7 @@ function toggleSulfurLock(idMain, target) {
 
 
 
+
 function getDefinitions(idMain, params, paramsNames) {
 	'use strict';
 
@@ -1150,7 +1151,6 @@ function getDefinitions(idMain, params, paramsNames) {
 		default:
 			break;		
 	}
-
 
 
 	(obj.type === undefined) ? (obj.type = 'linear') : (null);
