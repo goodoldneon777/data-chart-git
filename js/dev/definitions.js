@@ -730,6 +730,7 @@ function getDefinitions(idMain, params, paramsNames) {
 	}
 
 
+
 	(obj.type === undefined) ? (obj.type = 'linear') : (null);
 	(obj.unit === undefined) ? (obj.unit = '') : (null);
 	(obj.format === undefined) ? (obj.format = '.f') : (null);
