@@ -6,17 +6,20 @@
 	<option value="Chem">Chemistry</option>
 	<option value="ChemDiff">Chemistry Difference</option>
 	<option value="SlagChem">Chemistry Slag</option>
-	<option value="FurnaceAdd">BOP Furnace Additions</option>
-	<option value="Scrap">BOP Furnace Scrap</option>
-	<option value="LadleAdd">BOP Ladle Additions</option>
+	<option value="BOPFurnaceAdd">BOP Furnace Additions</option>
+	<option value="BOPScrap">BOP Furnace Scrap</option>
+	<option value="BOPLadleAdd">BOP Ladle Additions</option>
 	<option value="BOPmisc">BOP Misc.</option>
-	<option value="DegasserMisc">Degasser Misc.</option>
+	<option value="DegasserMisc">Degas Misc.</option>
+	<option value="ArgonLadleAdd">Argon Ladle Additions</option>
+	<option value="ArgonStir">Argon Stir</option>
 	<option value="ArgonMisc">Argon Misc.</option>
 	<option value="CCMisc">Caster Misc.</option>
 	<option value="ScrapYard">Scrap Yard</option>
 	<option value="BOPVessel">BOP Vessel</option>
-	<option value="RHVessel">RH Vessel</option>
-	<option value="CasterNumber">Caster</option>
+	<option value="RHVessel">Degas Vessel</option>
+	<option value="ArStation">Argon Station</option>
+	<option value="CasterNumber">Caster Number</option>
 </select>
 
 <select class="operator">

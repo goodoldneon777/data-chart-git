@@ -83,7 +83,7 @@ function fieldExpandCreate(id, target) {
 		['RHLeave', 'RH Leave']
 	];
 
-	var furnaceAddArr = [
+	var BOPfurnaceAddArr = [
 		['TotalChargeActual', 'Total Charge'],
 		['MetalActual', 'Metal Charge'],
 		['ScrapActual', 'Scrap Charge'],
@@ -98,7 +98,7 @@ function fieldExpandCreate(id, target) {
 		['ScrapPctModel', 'Scrap Percent (Model)']
 	];
 
-	var ladleAddArr = [
+	var BOPladleAddArr = [
 		['05', 'Reg FeMn'],
 		['12', 'MC FeMn'],
 		['13', 'Al Notch Bar'],
@@ -114,7 +114,7 @@ function fieldExpandCreate(id, target) {
 		['97', 'Ladle Desulf']
 	];
 
-	var scrapArr = [
+	var BOPscrapArr = [
 		['FAB', '1 Bundles'],
 		['FAF', 'Home'],
 		['FAS', 'Pit + BF Iron'],
@@ -148,9 +148,49 @@ function fieldExpandCreate(id, target) {
 		['TreatmentCount', 'Treatment Count']
 	];
 
+	var argonLadleAddArr = [
+		['ALUM', 'Aluminum'],
+		['SCRAP', 'Scrap'],
+		['CWIRE', 'Carbon Wire'],
+		['COAL', 'Coal'],
+		['MC-MN', 'Manganese (MC)'],
+		['COLUM', 'Columbium'],
+		['FE-CR', 'Chromium'],
+		['CALSI', 'CalSil'],
+		['FSILI', 'Silicon'],
+		['BIMAC', 'BIMAC'],
+		['BORON', 'Boron'],
+		['FE-TI', 'Titanium'],
+		['VANAD', 'Vanadium'],
+		['PHOS', 'Phosphorus'],
+		['PYRIT', 'Pyrite'],
+		['SULFU', 'Sulfur']
+	];
+
+	var argonStirCountArr = [
+		['AllStirs', 'Total All Stirs'],
+		['After1', 'Total After Stir 1'],
+		['Final', 'Final Stir'],
+		['1', 'Stir 1'],
+		['2', 'Stir 2'],
+		['3', 'Stir 3'],
+		['4', 'Stir 4'],
+		['5', 'Stir 5'],
+		['6', 'Stir 6'],
+		['7', 'Stir 7'],
+		['8', 'Stir 8']
+	];
+
+	var argonStirArr = [
+		['Duration', 'Duration']
+	];
+
+
 	var argonMiscArr = [
 		['TotalStir', 'Total Stir'],
-		['ChemTestCount', 'Chem Test Count']
+		['ChemTestCount', 'Chem Test Count'],
+		['StirCount', 'Stir Count'],
+		['AlLoss', 'Alum Loss (L1 to L2)']
 	];
 
 	var CCMiscArr = [
@@ -165,6 +205,8 @@ function fieldExpandCreate(id, target) {
 	var BOPVesselArr = ['25', '26'];
 
 	var RHVesselArr = ['1', '2'];
+
+	var ArStationArr = ['1', '2'];
 
 	var CasterNumberArr = ['1', '2'];
 
@@ -219,20 +261,28 @@ function fieldExpandCreate(id, target) {
 		case 'Celox':
 			selectCreate(target + ' .select1', celoxArr);
 			break;
-		case 'FurnaceAdd':
-			selectCreate(target + ' .select1', furnaceAddArr);
+		case 'BOPFurnaceAdd':
+			selectCreate(target + ' .select1', BOPfurnaceAddArr);
 			break;
-		case 'LadleAdd':
-			selectCreate(target + ' .select1', ladleAddArr);
+		case 'BOPLadleAdd':
+			selectCreate(target + ' .select1', BOPladleAddArr);
 			break;
-		case 'Scrap':
-			selectCreate(target + ' .select1', scrapArr);
+		case 'BOPScrap':
+			selectCreate(target + ' .select1', BOPscrapArr);
 			break;
 		case 'BOPmisc':
 			selectCreate(target + ' .select1', BOPmiscArr);
 			break;
 		case 'DegasserMisc':
 			selectCreate(target + ' .select1', degasserMiscArr);
+			break;
+		case 'ArgonLadleAdd':
+			selectCreate(target + ' .select1', argonStirCountArr);
+			selectCreate(target + ' .select2', argonLadleAddArr);
+			break;
+		case 'ArgonStir':
+			selectCreate(target + ' .select1', argonStirCountArr);
+			selectCreate(target + ' .select2', argonStirArr);
 			break;
 		case 'ArgonMisc':
 			selectCreate(target + ' .select1', argonMiscArr);
@@ -248,6 +298,9 @@ function fieldExpandCreate(id, target) {
 			break;
 		case 'RHVessel':
 			selectCreate(target + ' .select1', RHVesselArr);
+			break;
+		case 'ArStation':
+			selectCreate(target + ' .select1', ArStationArr);
 			break;
 		case 'CasterNumber':
 			selectCreate(target + ' .select1', CasterNumberArr);

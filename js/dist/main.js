@@ -634,7 +634,7 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.field = elem;
 			obj.sql.table = 'bop_ht_slag_chem';
 			break;
-		case 'FurnaceAdd':
+		case 'BOPFurnaceAdd':
 			var type 	= params[0];
 			obj.sql.table = 'bop_ht_chrg_mdl_data';
 			switch (type) {
@@ -726,7 +726,7 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.unit = 'lb';
 			obj.sql.joinType = 'left outer join';
 			break;
-		case 'LadleAdd':
+		case 'BOPLadleAdd':
 			var matCode = params[0];
 			obj.sql.idFull = (idMain + ' ' + matCode).fieldWrapAdd();
 			obj.title	= idMain + ' ' + paramsNames[0];
@@ -736,7 +736,7 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.filterLocal = '  and mat_cd = \'' + matCode + '\'';
 			obj.sql.joinType = 'left outer join';
 			break;
-		case 'Scrap':
+		case 'BOPScrap':
 			var matCode = params[0];
 			obj.sql.idFull = (idMain + ' ' + matCode).fieldWrapAdd();
 			obj.title = idMain + ' ' + paramsNames[0];
@@ -1064,7 +1064,82 @@ function getDefinitions(idMain, params, paramsNames) {
 					break;
 			}
 			break;
-			case 'ArgonMisc':
+		case 'ArgonLadleAdd':
+			var stir = params[0];
+			var matCode = params[1];
+			obj.sql.idFull = (idMain + ' ' + stir + ' ' + matCode).fieldWrapAdd();
+			obj.unit = 'lb';
+			// obj.sql.selectDistinct = true;
+			obj.sql.field = 'act_wt';
+			obj.sql.fromOverride =
+				'select distinct \n' + 
+				'  ht_num, tap_yr, stir_cnt, sum(isNull(act_wt, 0)) over(partition by ht_num, tap_yr) as act_wt \n' + 
+				'from( \n' + 
+				'  select distinct \n' + 
+				'    ht_num, tap_yr, stir_cnt, max(stir_cnt) over(partition by ht_num, tap_yr) as stir_cnt_final \n' + 
+				'  from USSGLW.dbo.argon_ht_stir \n' + 
+				') sub1 \n' + 
+				'left outer join( \n' + 
+				'  select \n' + 
+				'    ht_num as ht_num_sub2, tap_yr as tap_yr_sub2, stir_cnt as stir_cnt_sub2, mat_cd, act_wt \n' + 
+				'  from USSGLW.dbo.argon_ht_mat_add \n' + 
+				'  where \n' + 
+				'    mat_cd = \'' + matCode + '\' \n' + 
+				') sub2 \n' + 
+				'  on sub1.ht_num = sub2.ht_num_sub2 \n' + 
+				'    and sub1.tap_yr = sub2.tap_yr_sub2 \n' + 
+				'    and sub1.stir_cnt = sub2.stir_cnt_sub2 \n';
+
+			if (stir === 'AllStirs') {
+				obj.title	= 'Argon ' + paramsNames[1];
+			} else if (stir === 'After1') {
+				obj.title	= 'Argon ' + paramsNames[1] + ' After Stir1';
+				obj.sql.fromOverride += 'where stir_cnt > \'1\' \n';
+			} else if (stir === 'Final') {
+				obj.title	= 'Argon ' + paramsNames[1] + ' On Final Stir';
+				obj.sql.fromOverride += 'where stir_cnt = stir_cnt_final \n';
+			} else {
+				obj.title	= 'Argon Stir ' + paramsNames[1] + ' On Stir' + stir;
+				obj.sql.fromOverride += 'where stir_cnt = \'' + stir + '\' \n';
+			}
+
+			obj.sql.fromOverride = indentString(obj.sql.fromOverride, '  ');
+			break;
+		case 'ArgonStir':
+			var stir = params[0];
+			var option = params[1];
+			obj.sql.idFull = (idMain + ' ' + stir + ' ' + option).fieldWrapAdd();
+			obj.unit = 'minutes';
+			obj.format 	= '.1f';
+			obj.decimals 	= 1;
+			obj.sql.selectDistinct = true;
+			obj.sql.field = 'convert(decimal(10, 1), sum(stir_dur) over(partition by ht_num, tap_yr))';
+			obj.sql.fromOverride =
+				'select distinct \n' + 
+				'  ht_num, tap_yr, stir_cnt, \n' + 
+				'  max(stir_cnt) over(partition by ht_num, tap_yr) as stir_cnt_final, \n' +
+				'  datediff(second, stir_st_dt, stir_end_dt)/60.0 as stir_dur \n' + 
+				'from USSGLW.dbo.argon_ht_stir argon_ht_stir \n';
+	
+			if (stir === 'AllStirs') {
+				obj.title	= 'Argon ' + paramsNames[1];
+			} else if (stir === 'After1') {
+				obj.title	= 'Argon ' + paramsNames[1] + ' After Stir1';
+				obj.sql.fromOverride += 'where stir_cnt > \'1\' \n';
+			} else if (stir === 'Final') {
+				obj.title	= 'Argon ' + paramsNames[1] + ' On Final Stir';
+				obj.sql.filterLocal = '  and stir_cnt = stir_cnt_final \n';
+			} else {
+				obj.title	= 'Argon Stir ' + paramsNames[1] + ' On Stir' + stir;
+				obj.sql.fromOverride += 'where stir_cnt = \'' + stir + '\' \n';
+			}
+
+			obj.sql.fromOverride = indentString(obj.sql.fromOverride, '  ');
+
+			obj.sql.filterRealistic = obj.sql.idFull + ' > 0 ';
+
+			break;
+		case 'ArgonMisc':
 			var option 	= params[0];
 			obj.type 		= 'linear';
 			switch (option) {
@@ -1088,11 +1163,28 @@ function getDefinitions(idMain, params, paramsNames) {
 						'  and test_id like \'A_L_\' \n' +
 						'  and elem_cd = \'C\'';
 					break;
+				case 'StirCount':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Argon Stir Count';
+					obj.unit 		= 'stirs';
+					obj.sql.selectDistinct = true;
+					obj.sql.field 	= 'max(stir_cnt) over (partition by ht_num, tap_yr)';
+					obj.sql.table 	= 'argon_ht_stir';
+					break;
+				case 'AlLoss':
+					var AlChemChange = ('ChemDiff A_L1 A_L2 Al').fieldWrapAdd();
+					var AlAddedAfterStir1 = ('ArgonLadleAdd After1 ALUM').fieldWrapAdd();
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Al Loss (L1 to L2 Tests)';
+					obj.unit 		= 'lbs';
+					obj.sql.selectDistinct = true;
+					obj.sql.field = AlChemChange + ' * 5000 + ' + AlAddedAfterStir1;
+					break;
 				default:
 					break;
 			}
 			break;
-			case 'CCMisc':
+		case 'CCMisc':
 			var option 	= params[0];
 			obj.type 		= 'linear';
 			switch (option) {
@@ -1138,6 +1230,16 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + vessel + '\' ';
 			obj.disableOperator = true;
 			break;
+		case 'ArStation':
+			var station 	= params[0];
+			obj.sql.idFull 	= (idMain + ' ' + station).fieldWrapAdd();
+			obj.title 	= 'Argon Station';
+			obj.type 		= 'text';
+			obj.sql.field 	= 'Ar_stat_num';
+			obj.sql.table 	= 'argon_ht';
+			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + station + '\' ';
+			obj.disableOperator = true;
+			break;
 		case 'CasterNumber':
 			var caster 	= params[0];
 			obj.sql.idFull 	= (idMain + ' ' + caster).fieldWrapAdd();
@@ -1164,6 +1266,7 @@ function getDefinitions(idMain, params, paramsNames) {
 	(obj.sql.filterRealistic === undefined) ? (obj.sql.filterRealistic = '') : (obj.sql.filterRealistic += ' \n');
 	(obj.sql.joinType === undefined) ? (obj.sql.joinType = 'inner join') : (null);
 	(obj.sql.selectDistinct === undefined) ? (obj.sql.selectDistinct = false) : (null);
+	(obj.sql.fromOverride === undefined) ? (obj.sql.fromOverride = false) : (null);
 	(obj.disableOperator === undefined) ? (obj.disableOperator = false) : (null);
 
 
@@ -1263,7 +1366,28 @@ function getUrlParameter(sParam) {
 
 
 
+function indentString(str, indent) {
+	'use strict';
 
+	if (str === '') {
+		return str;
+	}
+
+	var arr = str.split('\n');
+	str = '';
+
+	if (arr.length === 1) {
+		str = indent + arr[0] + '\n';
+	} else {
+		$.each(arr, function( index, value ) {
+			if ( index < (arr.length - 1) ) {
+				str += indent + value + '\n';
+			}
+		});
+	}
+
+	return str;
+}
 //================================================================
 //===  fieldExpand.js  ========================================
 //==========================================================
@@ -1349,7 +1473,7 @@ function fieldExpandCreate(id, target) {
 		['RHLeave', 'RH Leave']
 	];
 
-	var furnaceAddArr = [
+	var BOPfurnaceAddArr = [
 		['TotalChargeActual', 'Total Charge'],
 		['MetalActual', 'Metal Charge'],
 		['ScrapActual', 'Scrap Charge'],
@@ -1364,7 +1488,7 @@ function fieldExpandCreate(id, target) {
 		['ScrapPctModel', 'Scrap Percent (Model)']
 	];
 
-	var ladleAddArr = [
+	var BOPladleAddArr = [
 		['05', 'Reg FeMn'],
 		['12', 'MC FeMn'],
 		['13', 'Al Notch Bar'],
@@ -1380,7 +1504,7 @@ function fieldExpandCreate(id, target) {
 		['97', 'Ladle Desulf']
 	];
 
-	var scrapArr = [
+	var BOPscrapArr = [
 		['FAB', '1 Bundles'],
 		['FAF', 'Home'],
 		['FAS', 'Pit + BF Iron'],
@@ -1414,9 +1538,49 @@ function fieldExpandCreate(id, target) {
 		['TreatmentCount', 'Treatment Count']
 	];
 
+	var argonLadleAddArr = [
+		['ALUM', 'Aluminum'],
+		['SCRAP', 'Scrap'],
+		['CWIRE', 'Carbon Wire'],
+		['COAL', 'Coal'],
+		['MC-MN', 'Manganese (MC)'],
+		['COLUM', 'Columbium'],
+		['FE-CR', 'Chromium'],
+		['CALSI', 'CalSil'],
+		['FSILI', 'Silicon'],
+		['BIMAC', 'BIMAC'],
+		['BORON', 'Boron'],
+		['FE-TI', 'Titanium'],
+		['VANAD', 'Vanadium'],
+		['PHOS', 'Phosphorus'],
+		['PYRIT', 'Pyrite'],
+		['SULFU', 'Sulfur']
+	];
+
+	var argonStirCountArr = [
+		['AllStirs', 'Total All Stirs'],
+		['After1', 'Total After Stir 1'],
+		['Final', 'Final Stir'],
+		['1', 'Stir 1'],
+		['2', 'Stir 2'],
+		['3', 'Stir 3'],
+		['4', 'Stir 4'],
+		['5', 'Stir 5'],
+		['6', 'Stir 6'],
+		['7', 'Stir 7'],
+		['8', 'Stir 8']
+	];
+
+	var argonStirArr = [
+		['Duration', 'Duration']
+	];
+
+
 	var argonMiscArr = [
 		['TotalStir', 'Total Stir'],
-		['ChemTestCount', 'Chem Test Count']
+		['ChemTestCount', 'Chem Test Count'],
+		['StirCount', 'Stir Count'],
+		['AlLoss', 'Alum Loss (L1 to L2)']
 	];
 
 	var CCMiscArr = [
@@ -1431,6 +1595,8 @@ function fieldExpandCreate(id, target) {
 	var BOPVesselArr = ['25', '26'];
 
 	var RHVesselArr = ['1', '2'];
+
+	var ArStationArr = ['1', '2'];
 
 	var CasterNumberArr = ['1', '2'];
 
@@ -1485,20 +1651,28 @@ function fieldExpandCreate(id, target) {
 		case 'Celox':
 			selectCreate(target + ' .select1', celoxArr);
 			break;
-		case 'FurnaceAdd':
-			selectCreate(target + ' .select1', furnaceAddArr);
+		case 'BOPFurnaceAdd':
+			selectCreate(target + ' .select1', BOPfurnaceAddArr);
 			break;
-		case 'LadleAdd':
-			selectCreate(target + ' .select1', ladleAddArr);
+		case 'BOPLadleAdd':
+			selectCreate(target + ' .select1', BOPladleAddArr);
 			break;
-		case 'Scrap':
-			selectCreate(target + ' .select1', scrapArr);
+		case 'BOPScrap':
+			selectCreate(target + ' .select1', BOPscrapArr);
 			break;
 		case 'BOPmisc':
 			selectCreate(target + ' .select1', BOPmiscArr);
 			break;
 		case 'DegasserMisc':
 			selectCreate(target + ' .select1', degasserMiscArr);
+			break;
+		case 'ArgonLadleAdd':
+			selectCreate(target + ' .select1', argonStirCountArr);
+			selectCreate(target + ' .select2', argonLadleAddArr);
+			break;
+		case 'ArgonStir':
+			selectCreate(target + ' .select1', argonStirCountArr);
+			selectCreate(target + ' .select2', argonStirArr);
 			break;
 		case 'ArgonMisc':
 			selectCreate(target + ' .select1', argonMiscArr);
@@ -1514,6 +1688,9 @@ function fieldExpandCreate(id, target) {
 			break;
 		case 'RHVessel':
 			selectCreate(target + ' .select1', RHVesselArr);
+			break;
+		case 'ArStation':
+			selectCreate(target + ' .select1', ArStationArr);
 			break;
 		case 'CasterNumber':
 			selectCreate(target + ' .select1', CasterNumberArr);
@@ -2236,6 +2413,7 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 	if (queryDepth === undefined) { queryDepth = 1; } else { queryDepth += 1; }
 	var query, subQuery, selectPrefix, field, filter, subName, idMain, joinType, joinOn;
 	query = subQuery = selectPrefix = field = filter = subName = idMain = joinType = joinOn = '';
+	var fromOverride = false;
 	var subFields = [], filterRealisticArray = [], params = [], paramsNames = [], idSplit = [];
 	var calcField = null;
 	var obj = {}, sql = {};
@@ -2255,12 +2433,27 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 
 	obj = getDefinitions(idMain, params, paramsNames);
 	field = obj.sql.field;
+	fromOverride = obj.sql.fromOverride;
 	if (obj.sql.selectDistinct) { select = 'select distinct'; } else { select = 'select'; }
 
 	subFields = field.fieldWrapToArray();
 	if (subFields.length > 0) { calcField = true; } else { calcField = false; }
 
-	if ( (queryDepth === 1)  &&  (calcField === false) ) {
+
+	if (fromOverride) {
+		subName = null;
+		selectPrefix = mSQL.createSelectPrefix(obj.sql.joinKeyArray, subName);
+		query = select + ' ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
+						'from( \n' +
+						fromOverride +
+						') sub \n' +
+						'where ' + filterGlobal;
+
+		if (obj.sql.filterLocal !== '') {
+			query += obj.sql.filterLocal;
+		}
+
+	} else if ( (queryDepth === 1)  &&  (calcField === false) ) {
 		subName = null;
 		selectPrefix = mSQL.createSelectPrefix(obj.sql.joinKeyArray, subName);
 		query = select + ' ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +

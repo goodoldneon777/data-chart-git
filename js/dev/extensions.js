@@ -91,3 +91,25 @@ function getUrlParameter(sParam) {
 
 
 
+function indentString(str, indent) {
+	'use strict';
+
+	if (str === '') {
+		return str;
+	}
+
+	var arr = str.split('\n');
+	str = '';
+
+	if (arr.length === 1) {
+		str = indent + arr[0] + '\n';
+	} else {
+		$.each(arr, function( index, value ) {
+			if ( index < (arr.length - 1) ) {
+				str += indent + value + '\n';
+			}
+		});
+	}
+
+	return str;
+}

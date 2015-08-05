@@ -236,6 +236,7 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 	if (queryDepth === undefined) { queryDepth = 1; } else { queryDepth += 1; }
 	var query, subQuery, selectPrefix, field, filter, subName, idMain, joinType, joinOn;
 	query = subQuery = selectPrefix = field = filter = subName = idMain = joinType = joinOn = '';
+	var fromOverride = false;
 	var subFields = [], filterRealisticArray = [], params = [], paramsNames = [], idSplit = [];
 	var calcField = null;
 	var obj = {}, sql = {};
@@ -255,12 +256,27 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 
 	obj = getDefinitions(idMain, params, paramsNames);
 	field = obj.sql.field;
+	fromOverride = obj.sql.fromOverride;
 	if (obj.sql.selectDistinct) { select = 'select distinct'; } else { select = 'select'; }
 
 	subFields = field.fieldWrapToArray();
 	if (subFields.length > 0) { calcField = true; } else { calcField = false; }
 
-	if ( (queryDepth === 1)  &&  (calcField === false) ) {
+
+	if (fromOverride) {
+		subName = null;
+		selectPrefix = mSQL.createSelectPrefix(obj.sql.joinKeyArray, subName);
+		query = select + ' ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
+						'from( \n' +
+						fromOverride +
+						') sub \n' +
+						'where ' + filterGlobal;
+
+		if (obj.sql.filterLocal !== '') {
+			query += obj.sql.filterLocal;
+		}
+
+	} else if ( (queryDepth === 1)  &&  (calcField === false) ) {
 		subName = null;
 		selectPrefix = mSQL.createSelectPrefix(obj.sql.joinKeyArray, subName);
 		query = select + ' ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +

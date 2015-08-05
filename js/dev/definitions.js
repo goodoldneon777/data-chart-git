@@ -212,7 +212,7 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.field = elem;
 			obj.sql.table = 'bop_ht_slag_chem';
 			break;
-		case 'FurnaceAdd':
+		case 'BOPFurnaceAdd':
 			var type 	= params[0];
 			obj.sql.table = 'bop_ht_chrg_mdl_data';
 			switch (type) {
@@ -304,7 +304,7 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.unit = 'lb';
 			obj.sql.joinType = 'left outer join';
 			break;
-		case 'LadleAdd':
+		case 'BOPLadleAdd':
 			var matCode = params[0];
 			obj.sql.idFull = (idMain + ' ' + matCode).fieldWrapAdd();
 			obj.title	= idMain + ' ' + paramsNames[0];
@@ -314,7 +314,7 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.filterLocal = '  and mat_cd = \'' + matCode + '\'';
 			obj.sql.joinType = 'left outer join';
 			break;
-		case 'Scrap':
+		case 'BOPScrap':
 			var matCode = params[0];
 			obj.sql.idFull = (idMain + ' ' + matCode).fieldWrapAdd();
 			obj.title = idMain + ' ' + paramsNames[0];
@@ -642,7 +642,82 @@ function getDefinitions(idMain, params, paramsNames) {
 					break;
 			}
 			break;
-			case 'ArgonMisc':
+		case 'ArgonLadleAdd':
+			var stir = params[0];
+			var matCode = params[1];
+			obj.sql.idFull = (idMain + ' ' + stir + ' ' + matCode).fieldWrapAdd();
+			obj.unit = 'lb';
+			// obj.sql.selectDistinct = true;
+			obj.sql.field = 'act_wt';
+			obj.sql.fromOverride =
+				'select distinct \n' + 
+				'  ht_num, tap_yr, stir_cnt, sum(isNull(act_wt, 0)) over(partition by ht_num, tap_yr) as act_wt \n' + 
+				'from( \n' + 
+				'  select distinct \n' + 
+				'    ht_num, tap_yr, stir_cnt, max(stir_cnt) over(partition by ht_num, tap_yr) as stir_cnt_final \n' + 
+				'  from USSGLW.dbo.argon_ht_stir \n' + 
+				') sub1 \n' + 
+				'left outer join( \n' + 
+				'  select \n' + 
+				'    ht_num as ht_num_sub2, tap_yr as tap_yr_sub2, stir_cnt as stir_cnt_sub2, mat_cd, act_wt \n' + 
+				'  from USSGLW.dbo.argon_ht_mat_add \n' + 
+				'  where \n' + 
+				'    mat_cd = \'' + matCode + '\' \n' + 
+				') sub2 \n' + 
+				'  on sub1.ht_num = sub2.ht_num_sub2 \n' + 
+				'    and sub1.tap_yr = sub2.tap_yr_sub2 \n' + 
+				'    and sub1.stir_cnt = sub2.stir_cnt_sub2 \n';
+
+			if (stir === 'AllStirs') {
+				obj.title	= 'Argon ' + paramsNames[1];
+			} else if (stir === 'After1') {
+				obj.title	= 'Argon ' + paramsNames[1] + ' After Stir1';
+				obj.sql.fromOverride += 'where stir_cnt > \'1\' \n';
+			} else if (stir === 'Final') {
+				obj.title	= 'Argon ' + paramsNames[1] + ' On Final Stir';
+				obj.sql.fromOverride += 'where stir_cnt = stir_cnt_final \n';
+			} else {
+				obj.title	= 'Argon Stir ' + paramsNames[1] + ' On Stir' + stir;
+				obj.sql.fromOverride += 'where stir_cnt = \'' + stir + '\' \n';
+			}
+
+			obj.sql.fromOverride = indentString(obj.sql.fromOverride, '  ');
+			break;
+		case 'ArgonStir':
+			var stir = params[0];
+			var option = params[1];
+			obj.sql.idFull = (idMain + ' ' + stir + ' ' + option).fieldWrapAdd();
+			obj.unit = 'minutes';
+			obj.format 	= '.1f';
+			obj.decimals 	= 1;
+			obj.sql.selectDistinct = true;
+			obj.sql.field = 'convert(decimal(10, 1), sum(stir_dur) over(partition by ht_num, tap_yr))';
+			obj.sql.fromOverride =
+				'select distinct \n' + 
+				'  ht_num, tap_yr, stir_cnt, \n' + 
+				'  max(stir_cnt) over(partition by ht_num, tap_yr) as stir_cnt_final, \n' +
+				'  datediff(second, stir_st_dt, stir_end_dt)/60.0 as stir_dur \n' + 
+				'from USSGLW.dbo.argon_ht_stir argon_ht_stir \n';
+	
+			if (stir === 'AllStirs') {
+				obj.title	= 'Argon ' + paramsNames[1];
+			} else if (stir === 'After1') {
+				obj.title	= 'Argon ' + paramsNames[1] + ' After Stir1';
+				obj.sql.fromOverride += 'where stir_cnt > \'1\' \n';
+			} else if (stir === 'Final') {
+				obj.title	= 'Argon ' + paramsNames[1] + ' On Final Stir';
+				obj.sql.filterLocal = '  and stir_cnt = stir_cnt_final \n';
+			} else {
+				obj.title	= 'Argon Stir ' + paramsNames[1] + ' On Stir' + stir;
+				obj.sql.fromOverride += 'where stir_cnt = \'' + stir + '\' \n';
+			}
+
+			obj.sql.fromOverride = indentString(obj.sql.fromOverride, '  ');
+
+			obj.sql.filterRealistic = obj.sql.idFull + ' > 0 ';
+
+			break;
+		case 'ArgonMisc':
 			var option 	= params[0];
 			obj.type 		= 'linear';
 			switch (option) {
@@ -666,11 +741,28 @@ function getDefinitions(idMain, params, paramsNames) {
 						'  and test_id like \'A_L_\' \n' +
 						'  and elem_cd = \'C\'';
 					break;
+				case 'StirCount':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Argon Stir Count';
+					obj.unit 		= 'stirs';
+					obj.sql.selectDistinct = true;
+					obj.sql.field 	= 'max(stir_cnt) over (partition by ht_num, tap_yr)';
+					obj.sql.table 	= 'argon_ht_stir';
+					break;
+				case 'AlLoss':
+					var AlChemChange = ('ChemDiff A_L1 A_L2 Al').fieldWrapAdd();
+					var AlAddedAfterStir1 = ('ArgonLadleAdd After1 ALUM').fieldWrapAdd();
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'Al Loss (L1 to L2 Tests)';
+					obj.unit 		= 'lbs';
+					obj.sql.selectDistinct = true;
+					obj.sql.field = AlChemChange + ' * 5000 + ' + AlAddedAfterStir1;
+					break;
 				default:
 					break;
 			}
 			break;
-			case 'CCMisc':
+		case 'CCMisc':
 			var option 	= params[0];
 			obj.type 		= 'linear';
 			switch (option) {
@@ -716,6 +808,16 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + vessel + '\' ';
 			obj.disableOperator = true;
 			break;
+		case 'ArStation':
+			var station 	= params[0];
+			obj.sql.idFull 	= (idMain + ' ' + station).fieldWrapAdd();
+			obj.title 	= 'Argon Station';
+			obj.type 		= 'text';
+			obj.sql.field 	= 'Ar_stat_num';
+			obj.sql.table 	= 'argon_ht';
+			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + station + '\' ';
+			obj.disableOperator = true;
+			break;
 		case 'CasterNumber':
 			var caster 	= params[0];
 			obj.sql.idFull 	= (idMain + ' ' + caster).fieldWrapAdd();
@@ -742,6 +844,7 @@ function getDefinitions(idMain, params, paramsNames) {
 	(obj.sql.filterRealistic === undefined) ? (obj.sql.filterRealistic = '') : (obj.sql.filterRealistic += ' \n');
 	(obj.sql.joinType === undefined) ? (obj.sql.joinType = 'inner join') : (null);
 	(obj.sql.selectDistinct === undefined) ? (obj.sql.selectDistinct = false) : (null);
+	(obj.sql.fromOverride === undefined) ? (obj.sql.fromOverride = false) : (null);
 	(obj.disableOperator === undefined) ? (obj.disableOperator = false) : (null);
 
 
