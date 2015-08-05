@@ -1,5 +1,0 @@
-$ cat .gitignore
-# exclude everything except directory foo/bar
-/php/query_linux.php
-/php/query_windows.php
-/php/updateLog.php
