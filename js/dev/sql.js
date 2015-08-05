@@ -264,7 +264,7 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 		subName = null;
 		selectPrefix = mSQL.createSelectPrefix(obj.sql.joinKeyArray, subName);
 		query = select + ' ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
-						'from ' + obj.sql.db + '.' + obj.sql.table + ' \n' +
+						'from ' + obj.sql.db + '.' + obj.sql.table + ' ' + obj.sql.table + ' \n' +
 						'where ' + filterGlobal;
 
 		if (obj.sql.filterLocal !== '') {
@@ -339,7 +339,7 @@ mSQL.subQueryBuild = function(idFull, filterGlobal, queryDepth) {
 		subName = null;
 		selectPrefix = mSQL.createSelectPrefix(obj.sql.joinKeyArray, subName);
 		query = select + ' ' + selectPrefix + ', ' + obj.sql.field + ' as ' + idFull + ' \n' +
-						'from ' + obj.sql.db + '.' + obj.sql.table + ' \n' +
+						'from ' + obj.sql.db + '.' + obj.sql.table + ' ' + obj.sql.table + ' \n' +
 						'where ' + filterGlobal;
 
 		if (obj.sql.filterLocal !== '') {

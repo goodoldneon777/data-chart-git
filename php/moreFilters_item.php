@@ -6,9 +6,9 @@
 	<option value="Chem">Chemistry</option>
 	<option value="ChemDiff">Chemistry Difference</option>
 	<option value="SlagChem">Chemistry Slag</option>
-	<option value="FurnaceAdd">Furnace Additions</option>
-	<option value="Scrap">Furnace Scrap</option>
-	<option value="LadleAdd">Ladle Additions</option>
+	<option value="FurnaceAdd">BOP Furnace Additions</option>
+	<option value="Scrap">BOP Furnace Scrap</option>
+	<option value="LadleAdd">BOP Ladle Additions</option>
 	<option value="BOPmisc">BOP Misc.</option>
 	<option value="DegasserMisc">Degasser Misc.</option>
 	<option value="ArgonMisc">Argon Misc.</option>
