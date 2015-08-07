@@ -828,6 +828,14 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + caster + '\' ';
 			obj.disableOperator = true;
 			break;
+		case 'LadleNumber':
+			obj.sql.idFull 	= (idMain + ' ' + caster).fieldWrapAdd();
+			obj.title 	= 'Ladle';
+			obj.type 		= 'text';
+			obj.sql.field 	= 'ldl_num';
+			obj.sql.table 	= 'bop_ht';
+			obj.equalOperatorOnly = true;
+			break;
 		default:
 			break;		
 	}
@@ -846,6 +854,7 @@ function getDefinitions(idMain, params, paramsNames) {
 	(obj.sql.selectDistinct === undefined) ? (obj.sql.selectDistinct = false) : (null);
 	(obj.sql.fromOverride === undefined) ? (obj.sql.fromOverride = false) : (null);
 	(obj.disableOperator === undefined) ? (obj.disableOperator = false) : (null);
+	(obj.equalOperatorOnly === undefined) ? (obj.equalOperatorOnly = false) : (null);
 
 
 	return obj;

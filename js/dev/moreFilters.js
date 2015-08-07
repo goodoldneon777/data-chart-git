@@ -34,6 +34,7 @@ mMoreFilters.update = function(changedElem) {
 	var selection = $(target + ' .' + changedElemClass).val();
 	var idMain = '';
 	var disableOperator = false;
+	var equalOperatorOnly = false;
 
 	if ($(changedElem).closest('div').attr('class') === 'fieldExpand') {
 		target = '#m-moreFilters #' + changedElem.parent().parent().attr('id') + ' .fieldExpand';
@@ -46,11 +47,18 @@ mMoreFilters.update = function(changedElem) {
 		case 'field':
 			idMain = selection;
 			disableOperator = getDefinitions(idMain, null, null).disableOperator;
+			equalOperatorOnly = getDefinitions(idMain, null, null).equalOperatorOnly;
 			$(target + ' .fieldExpand select').prop('disabled', false);
 
 			if ( (selection === 'N/A')  ||  (disableOperator) ) {
 				$(target + ' .operator').hide();
 				$(target + ' .range').children().hide();
+			} else if (equalOperatorOnly) {
+				$(target + ' .operator').show();
+				$(target + ' .operator').val('=');
+				$(target + ' .range .input1').show();
+				$(target + ' .range .and').hide();
+				$(target + ' .range .input2').hide();
 			} else {
 				$(target + ' .operator').show();
 				$(target + ' .range .input1').show();
@@ -58,7 +66,7 @@ mMoreFilters.update = function(changedElem) {
 			fieldExpandCreate(idMain, target);
 			break;
 		case 'operator':
-			if (selection == 'between'  ||  selection == 'notBetween') {
+			if (selection === 'between'  ||  selection === 'notBetween') {
 				$(target + " .range").children().show();
 			} else {
 				$(target + ' .range .input1').show();

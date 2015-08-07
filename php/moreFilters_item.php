@@ -20,6 +20,7 @@
 	<option value="RHVessel">Degas Vessel</option>
 	<option value="ArStation">Argon Station</option>
 	<option value="CasterNumber">Caster Number</option>
+	<option value="LadleNumber">Ladle Number</option>
 </select>
 
 <select class="operator">

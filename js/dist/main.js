@@ -1250,6 +1250,14 @@ function getDefinitions(idMain, params, paramsNames) {
 			obj.sql.filterLocal = '  and ' + obj.sql.field + ' = \'' + caster + '\' ';
 			obj.disableOperator = true;
 			break;
+		case 'LadleNumber':
+			obj.sql.idFull 	= (idMain + ' ' + caster).fieldWrapAdd();
+			obj.title 	= 'Ladle';
+			obj.type 		= 'text';
+			obj.sql.field 	= 'ldl_num';
+			obj.sql.table 	= 'bop_ht';
+			obj.equalOperatorOnly = true;
+			break;
 		default:
 			break;		
 	}
@@ -1268,6 +1276,7 @@ function getDefinitions(idMain, params, paramsNames) {
 	(obj.sql.selectDistinct === undefined) ? (obj.sql.selectDistinct = false) : (null);
 	(obj.sql.fromOverride === undefined) ? (obj.sql.fromOverride = false) : (null);
 	(obj.disableOperator === undefined) ? (obj.disableOperator = false) : (null);
+	(obj.equalOperatorOnly === undefined) ? (obj.equalOperatorOnly = false) : (null);
 
 
 	return obj;
@@ -1759,6 +1768,7 @@ mMoreFilters.update = function(changedElem) {
 	var selection = $(target + ' .' + changedElemClass).val();
 	var idMain = '';
 	var disableOperator = false;
+	var equalOperatorOnly = false;
 
 	if ($(changedElem).closest('div').attr('class') === 'fieldExpand') {
 		target = '#m-moreFilters #' + changedElem.parent().parent().attr('id') + ' .fieldExpand';
@@ -1771,11 +1781,18 @@ mMoreFilters.update = function(changedElem) {
 		case 'field':
 			idMain = selection;
 			disableOperator = getDefinitions(idMain, null, null).disableOperator;
+			equalOperatorOnly = getDefinitions(idMain, null, null).equalOperatorOnly;
 			$(target + ' .fieldExpand select').prop('disabled', false);
 
 			if ( (selection === 'N/A')  ||  (disableOperator) ) {
 				$(target + ' .operator').hide();
 				$(target + ' .range').children().hide();
+			} else if (equalOperatorOnly) {
+				$(target + ' .operator').show();
+				$(target + ' .operator').val('=');
+				$(target + ' .range .input1').show();
+				$(target + ' .range .and').hide();
+				$(target + ' .range .input2').hide();
 			} else {
 				$(target + ' .operator').show();
 				$(target + ' .range .input1').show();
@@ -1783,7 +1800,7 @@ mMoreFilters.update = function(changedElem) {
 			fieldExpandCreate(idMain, target);
 			break;
 		case 'operator':
-			if (selection == 'between'  ||  selection == 'notBetween') {
+			if (selection === 'between'  ||  selection === 'notBetween') {
 				$(target + " .range").children().show();
 			} else {
 				$(target + ' .range .input1').show();
