@@ -1440,9 +1440,8 @@ function fieldExpandCreate(id, target) {
 
 	var chemElemArr = [
 		'C', 'Mn', 'P', 'S', 'Si', 'Cu', 'Ni', 'Cr', 'Mo', 'Sn',
-		'Al', 'V', 'Cb', 'Ti', 'B', 'N', 'Ca', 'As', 'Sb'
+		'Al', 'V', 'Cb', 'Ti', 'B', 'N', 'Ca', 'As', 'Sb', 'ExTi'
 	];
-
 	var chemSlagArr = [
 		['FeO_pct', 'FeO'],
 		['Vratio', 'Vratio'],
