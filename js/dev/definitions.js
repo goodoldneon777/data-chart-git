@@ -531,6 +531,29 @@ function getDefinitions(idMain, params, paramsNames) {
 					obj.sql.table 	= 'bop_ht';
 					obj.sql.filterLocal = '  and hm_skim_loss_wt_typ = \'P\' ';
 					break;
+				case 'O2VolMainBlow':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'O2 Vol: Main Blow';
+					obj.unit 		= 'scft';
+					obj.sql.field 	= 'max(lance_cum_vol) over(partition by ht_num, tap_yr)';
+					obj.sql.table 	= 'bop_ht_lance';
+					obj.sql.filterRealistic = obj.sql.idFull + ' > 0 ';
+					break;
+				case 'O2VolOxyRun':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'O2 Vol: Model Oxy Run';
+					obj.unit 		= 'scft';
+					obj.sql.field 	= 'oxy_trim_aim_oxy';
+					obj.sql.table 	= 'bop_ht';
+					obj.sql.filterRealistic = obj.sql.idFull + ' > 0 ';
+					break;
+				case 'O2VolMainMinusOxy':
+					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
+					obj.title 	= 'O2 Vol: Main Blow - Oxy';
+					obj.unit 		= 'scft';
+					obj.sql.field 	= ('BOPmisc O2VolMainBlow').fieldWrapAdd() + ' - ' + ('BOPmisc O2VolOxyRun').fieldWrapAdd();
+					// obj.sql.filterRealistic = obj.sql.idFull + ' > 0 ';
+					break;
 				case 'RecycleWt':
 					obj.sql.idFull = (idMain + ' ' + option).fieldWrapAdd();
 					obj.title 	= 'Recycled Steel';

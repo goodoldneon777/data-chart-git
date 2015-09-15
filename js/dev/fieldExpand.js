@@ -133,6 +133,9 @@ function fieldExpandCreate(id, target) {
 		['DsfSkimCrane', 'Desulf Skim (Crane)'],
 		['DsfSkimCalc', 'Desulf Skim (Calc)'],
 		['RecycleWt', 'Recycled Steel Weight'],
+		['O2VolMainBlow', 'O2 Vol: Main Blow'],
+		['O2VolOxyRun', 'O2 Vol: Model Oxy Run'],
+		['O2VolMainMinusOxy', 'O2 Vol: Main Blow - Oxy'],
 		['TotalN2Cool', 'Total N2 Cool Time'],
 		['TapDur', 'Tap Duration']
 	];
